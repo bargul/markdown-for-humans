@@ -40,6 +40,12 @@ This document lists the third-party open source software components used in Mark
 - **Repository:** https://github.com/highlightjs/highlight.js
 - **License URL:** https://github.com/highlightjs/highlight.js/blob/main/LICENSE
 
+### highlightjs-sap-abap
+- **License:** MIT
+- **Copyright:** © 2024 Lars Hvam Petersen, Cassio Binkowski
+- **Repository:** https://github.com/highlightjs/highlightjs-sap-abap
+- **License URL:** https://github.com/highlightjs/highlightjs-sap-abap/blob/main/LICENSE
+
 ### katex
 - **License:** MIT
 - **Copyright:** © 2013-2024 Khan Academy

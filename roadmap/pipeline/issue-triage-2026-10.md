@@ -44,7 +44,7 @@ The three that most need attention:
 | 69 | nacisimsek | Defect | M/L | `breaks: true` in `src/webview/editor.ts` still turns every single newline into a line break (native: a three-line hard-wrapped paragraph shows as three lines). PRs #70 and #99 were closed unmerged. |
 | 72 | zhouxinghong | Feature | M/L | Raw HTML such as `<video>` is shown as source, as documented. Rendering media needs a content security review. |
 | 77 | FrankSAURET | Feature | L | Translation. Same as #55. |
-| 80 | laicasaane | Fixed | none | C# highlighting. Reproduced on 0.3.0 (no colors), fixed on 0.4.3 with the reporter's own file (native). The 0.4.0 highlighter loads 36 grammars including `csharp`. |
+| 80 | laicasaane | Fixed | none | C# highlighting. Reproduced on 0.3.0 (no colors), fixed on 0.4.3 with the reporter's own file (native). The 0.4.0 highlighter loads 36 grammars including `csharp` (37 since ABAP highlighting was added). |
 | 81 | laicasaane | Defect | S | The toolbar code block dropdown lists 13 languages and C# is not one of them. Typing ```` ```csharp ```` works. Code only. |
 | 84 | jprisant | Defect (docs) | S | `CHANGELOG.md` [0.3.0] and the v0.3.0 GitHub release announce `markdownForHumans.display.editorTheme` and a toolbar toggle. PR #54 was reverted on 2026-06-19 (`decf0c6`); neither exists in the code. |
 | 86 | davidjdixon | Feature | M | Font family, weight, size and line height for readability (accessibility). The reporter calls it the blocker to making this the default editor. The owner's question from 2026-09-27 is unanswered. Same as #15. |

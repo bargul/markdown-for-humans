@@ -14,6 +14,8 @@ describe('highlighting language registry', () => {
     ['c#', 'csharp'],
     ['pycon', 'python-repl'],
     ['toml', 'ini'],
+    ['sap-abap', 'abap'],
+    ['ABAP', 'abap'],
   ])('resolves %s to %s', (authored, expected) => {
     expect(resolveGrammar(authored)).toBe(expected);
   });
@@ -32,9 +34,17 @@ describe('highlighting language registry', () => {
     expect(resolveGrammar(authored)).toBeNull();
   });
   it('preserves all currently effective non-plain canonical grammar families', () => {
-    expect(SUPPORTED_GRAMMARS).toHaveLength(36);
+    expect(SUPPORTED_GRAMMARS).toHaveLength(37);
     expect(SUPPORTED_GRAMMARS).toEqual(
-      expect.arrayContaining(['arduino', 'php-template', 'yaml', 'python-repl', 'graphql', 'wasm'])
+      expect.arrayContaining([
+        'arduino',
+        'php-template',
+        'yaml',
+        'python-repl',
+        'graphql',
+        'wasm',
+        'abap',
+      ])
     );
   });
 });

@@ -601,6 +601,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         ['Java', 'java'],
         ['Go', 'go'],
         ['Rust', 'rust'],
+        ['ABAP', 'abap'],
       ].map(([label, language]) => ({
         label,
         action: () => setCodeBlockNormalized(editor, language),

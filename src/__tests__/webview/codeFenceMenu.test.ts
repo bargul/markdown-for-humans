@@ -76,6 +76,16 @@ describe('code language menu', () => {
     expect(editor.getAttributes('codeBlock').language).toBe('plaintext title="sample"');
   });
 
+  it('offers ABAP and recognizes its sap-abap alias as the same grammar', () => {
+    editor.commands.updateAttributes('codeBlock', { language: 'sap-abap title="report"' });
+    expect(menuItem('ABAP').getAttribute('aria-pressed')).toBe('true');
+
+    menuItem('ABAP').click();
+
+    expect(editor.getAttributes('codeBlock').language).toBe('abap title="report"');
+    expect(menuItem('ABAP').getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('preserves each fence suffix when changing several selected code blocks', () => {
     editor.commands.setContent({
       type: 'doc',

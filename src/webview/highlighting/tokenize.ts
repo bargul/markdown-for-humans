@@ -16,6 +16,7 @@ import sql from 'highlight.js/lib/languages/sql';
 import java from 'highlight.js/lib/languages/java';
 import go from 'highlight.js/lib/languages/go';
 import rust from 'highlight.js/lib/languages/rust';
+import abap from 'highlightjs-sap-abap';
 import { resolveGrammar } from './languageRegistry';
 import {
   HIGHLIGHT_LIMITS,
@@ -41,6 +42,9 @@ lowlight.registerLanguage('sql', sql);
 lowlight.registerLanguage('java', java);
 lowlight.registerLanguage('go', go);
 lowlight.registerLanguage('rust', rust);
+// ABAP comes from the community grammar package (not in highlight.js core).
+// Registered last to keep the pre-existing registration order untouched.
+lowlight.registerLanguage('abap', abap);
 
 interface TokenTree {
   type?: unknown;
