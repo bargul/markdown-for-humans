@@ -16,6 +16,9 @@ const path = require('node:path');
 const { fileURLToPath, pathToFileURL } = require('node:url');
 const vscode = require('vscode');
 
+// Windows can still hold a just-closed file for a moment; retry instead of failing the test on cleanup.
+const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 10, retryDelay: 100 };
+
 const CUSTOM_EDITOR_VIEW_TYPE = 'markdownForHumans.editor';
 
 async function waitFor(predicate, description, timeoutMs = 30_000) {
@@ -194,8 +197,8 @@ suite('SVG image integrity (Ext Host)', () => {
     } finally {
       vscode.window.showErrorMessage = originalShowError;
       await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-      fs.rmSync(feedbackRoot, { recursive: true, force: true });
-      fs.rmSync(temporary, { recursive: true, force: true });
+      fs.rmSync(feedbackRoot, REMOVE_OPTIONS);
+      fs.rmSync(temporary, REMOVE_OPTIONS);
     }
   });
 
@@ -273,8 +276,8 @@ suite('SVG image integrity (Ext Host)', () => {
     } finally {
       vscode.window.showErrorMessage = originalShowError;
       await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-      fs.rmSync(feedbackRoot, { recursive: true, force: true });
-      fs.rmSync(temporary, { recursive: true, force: true });
+      fs.rmSync(feedbackRoot, REMOVE_OPTIONS);
+      fs.rmSync(temporary, REMOVE_OPTIONS);
     }
   });
 });

@@ -14,9 +14,17 @@ on:
 # Default to no permissions; each job opts in to exactly what it needs.
 permissions: {}
 
+# A new push to a pull request makes the run for the previous push pointless.
+# Runs on main are never cancelled, so every merged commit keeps its result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Normal run: about 3 minutes. Without a limit a hung job holds a runner for 6 hours.
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -43,6 +51,10 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      # The bundler does not check types, and Jest only checks files a test imports.
+      - name: Check types
+        run: npm run typecheck
+
       - name: Run tests
         run: npm run test:coverage
 
@@ -66,6 +78,7 @@ jobs:
   performance-budgets:
     name: Deterministic performance budgets (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     permissions:
       contents: read
 
@@ -99,6 +112,7 @@ jobs:
   extension-host:
     name: VS Code Extension Host (${{ matrix.os }}, ${{ matrix.vscode-version }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -139,6 +153,7 @@ jobs:
   # Ensure the extension can be packaged
   package:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [test, performance-budgets, extension-host]
     permissions:
       contents: read

@@ -9,6 +9,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vscode = require('vscode');
 
+// Windows can still hold a just-closed file for a moment; retry instead of failing the test on cleanup.
+const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 10, retryDelay: 100 };
+
 const CUSTOM_EDITOR_VIEW_TYPE = 'markdownForHumans.editor';
 
 async function waitFor(predicate, description, timeoutMs = 30_000) {
@@ -34,7 +37,7 @@ async function assertFeedbackStarts(fixtureName) {
   await vscode.workspace.fs.stat(fixtureUri);
 
   const feedbackRoot = path.join(workspaceFolder.uri.fsPath, '.md4h', 'feedback');
-  fs.rmSync(feedbackRoot, { recursive: true, force: true });
+  fs.rmSync(feedbackRoot, REMOVE_OPTIONS);
 
   const errors = [];
   const warnings = [];
@@ -93,7 +96,7 @@ async function assertFeedbackStarts(fixtureName) {
   } finally {
     vscode.window.showErrorMessage = originalError;
     vscode.window.showWarningMessage = originalWarning;
-    fs.rmSync(feedbackRoot, { recursive: true, force: true });
+    fs.rmSync(feedbackRoot, REMOVE_OPTIONS);
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
   }
 }
