@@ -4,6 +4,7 @@
   "command.outline.filter.title": "アウトライン: 見出しをフィルター",
   "command.outline.clearFilter.title": "アウトライン: フィルターをクリア",
   "command.toggleFormattingShortcuts.title": "Markdown Editor for Humans: 書式設定のショートカットの切り替え (Cmd/Ctrl+B/I/U)",
+  "command.copyReferenceForAi.title": "Markdown Editor for Humans: AI 用の参照をコピー",
   "command.feedback.start.title": "Markdown Editor for Humans: フィードバックを開始",
   "command.feedback.commentSelection.title": "Markdown Editor for Humans: 選択範囲にフィードバックを追加",
   "command.feedback.chooseScope.title": "Markdown Editor for Humans: フィードバックの対象範囲を選択",

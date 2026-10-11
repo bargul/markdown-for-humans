@@ -6,7 +6,7 @@
 - **Slug:** copy-ai-reference
 - **Status:** in-progress
 - **Created:** 2026-10-11
-- **Last updated:** 2026-10-11
+- **Last updated:** 2026-10-11 (merged main after 0.4.4)
 - **Shipped:** _(pending)_
 
 ---
@@ -172,6 +172,13 @@ webview: toast
   - After a document loads, the caret is at the end of the document, not the start. The host test places it with `markdownForHumans.navigateToHeading`.
   - A run of blank lines does not load as one empty paragraph per extra line (three blank lines load as one), so a caret on such a paragraph resolves to the blank gap's range unless the file has the editor's own layout.
 - **Not verified in a real window:** toolbar click, toast appearance, mouse selections, and a user keybinding firing while the rich view has focus. Background control could not address a second VS Code process while another VS Code window was open, and taking over the screen was not appropriate with other sessions active.
+
+### 2026-10-11 - Merged main after 0.4.4 and localized the new text
+
+- **What:** Merged origin/main `1b271df` (0.4.4, translations, font settings, toolbar changes). This feature is not in 0.4.4; it targets the next release.
+- **Text:** The command title is `%command.copyReferenceForAi.title%` with English in `package.nls.json`. The toolbar label and tooltip, the webview failure toast and the five host messages go through `l10n.t` and `vscode.l10n.t`. The tooltip's example (`@file#L10-14`) is passed as an argument, so it is not part of the translated sentence.
+- **Locales:** nine new entries in each of `zh-cn`, `ja`, `es`, `pt-br`, `ru` (bundle and `package.nls`). AI translated, same status as the rest of those files.
+- **Notes:** `test/integration/workspace/.vscode/settings.json` from main is in the commit but not in this worktree's working copy, because the app's sync tool treats it as a protected path. The Extension Development Host suite therefore has to run from an export of the commit.
 
 ---
 

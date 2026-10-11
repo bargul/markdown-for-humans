@@ -2129,11 +2129,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     try {
       const request = parseAiReferenceRequest(message);
       if (!request) {
-        reply(false, 'Could not copy a reference for AI.');
+        reply(false, vscode.l10n.t('Could not copy a reference for AI.'));
         return;
       }
       if (document.uri.scheme === 'untitled') {
-        reply(false, 'Save this file first. An untitled document has no path to reference.');
+        reply(
+          false,
+          vscode.l10n.t('Save this file first. An untitled document has no path to reference.')
+        );
         return;
       }
 
@@ -2142,7 +2145,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         this.feedbackSessions.has(documentKey) || this.feedbackTransitions.has(documentKey);
       const wasDirty = document.isDirty;
       if (frozen ? wasDirty : !(await this.flushAndSaveIfDirty(document, webview))) {
-        reply(false, 'Not copied: the file has changes that could not be saved.');
+        reply(false, vscode.l10n.t('Not copied: the file has changes that could not be saved.'));
         return;
       }
 
@@ -2159,14 +2162,19 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (!lines) {
         reply(
           true,
-          `Copied ${reference} without line numbers: this spot could not be matched to the saved file.`
+          vscode.l10n.t(
+            'Copied {0} without line numbers: this spot could not be matched to the saved file.',
+            reference
+          )
         );
+      } else if (wasDirty) {
+        reply(true, vscode.l10n.t('Saved the file and copied {0}', reference));
       } else {
-        reply(true, `${wasDirty ? 'Saved the file and copied' : 'Copied'} ${reference}`);
+        reply(true, vscode.l10n.t('Copied {0}', reference));
       }
     } catch (error) {
       console.error('[MD4H] Copy Reference for AI failed:', error);
-      reply(false, 'Could not copy a reference for AI.');
+      reply(false, vscode.l10n.t('Could not copy a reference for AI.'));
     }
   }
 

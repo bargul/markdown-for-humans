@@ -49,6 +49,10 @@ const packageJson = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8
   };
 };
 
+const englishManifestText = JSON.parse(
+  readFileSync(resolve(root, 'package.nls.json'), 'utf8')
+) as Record<string, string>;
+
 function registerCommands(): Map<string, () => unknown> {
   jest.clearAllMocks();
   (vscode.window.createTreeView as jest.Mock | undefined) = jest.fn(() => ({
@@ -70,9 +74,12 @@ describe('Copy Reference for AI command', () => {
     const command = packageJson.contributes.commands.find(entry => entry.command === COMMAND);
     expect(command).toEqual({
       command: COMMAND,
-      title: 'Markdown Editor for Humans: Copy Reference for AI',
+      title: '%command.copyReferenceForAi.title%',
       enablement: ACTIVE_EDITOR,
     });
+    expect(englishManifestText['command.copyReferenceForAi.title']).toBe(
+      'Markdown Editor for Humans: Copy Reference for AI'
+    );
     expect(packageJson.contributes.menus.commandPalette).toContainEqual({
       command: COMMAND,
       when: ACTIVE_EDITOR,

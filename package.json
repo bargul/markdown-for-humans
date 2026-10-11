@@ -210,7 +210,7 @@
       },
       {
         "command": "markdownForHumans.copyReferenceForAi",
-        "title": "Markdown Editor for Humans: Copy Reference for AI",
+        "title": "%command.copyReferenceForAi.title%",
         "enablement": "activeCustomEditorId == 'markdownForHumans.editor'"
       },
       {

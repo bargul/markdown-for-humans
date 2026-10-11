@@ -2817,7 +2817,7 @@ window.addEventListener('copyReferenceForAi', () => {
   } catch (error) {
     console.error('[MD4H] Copy Reference for AI failed:', error);
     void import('./features/auditOverlay').then(({ showToast }) => {
-      showToast('Could not copy a reference for AI.', 'info');
+      showToast(l10n.t('Could not copy a reference for AI.'), 'info');
     });
   }
 });
