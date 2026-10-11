@@ -39,9 +39,9 @@ Since 0.4.1, blocks you do not edit keep their exact source on save. A block you
 In a block you edit, escaped characters such as `\*` may be saved without the backslash and turn into formatting. Unedited blocks keep the backslash.
 
 ### Plain-text paste and Markdown syntax
-Text pasted with `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS) is saved as written. If it contains Markdown syntax (`**bold**`, or a line that starts with `#` or `-`), it shows as plain characters after the paste and is read as Markdown the next time the file is opened.
+Text pasted with `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS) is saved as written. When it contains Markdown syntax (`**bold**`, or a line that starts with `#` or `-`), the editor asks how to paste it. If you choose **Paste as plain text**, it shows as plain characters after the paste and is read as Markdown the next time the file is opened.
 
-**Workaround:** Put text that must stay literal in inline code or a code block.
+**Workaround:** Choose **Paste as code** for text that must stay literal.
 
 ### HTML comments inside links, emphasis, or before text
 Comments are kept on their own lines, inside lists and blockquotes, and inside a line of text (`Text <!-- note --> more`). Two placements are still dropped when the file is saved from the editor: a comment inside link text or emphasis (`**bold <!-- note --> text**`), and a comment at the start of a line with text after it on that line (`<!-- note --> text`).
