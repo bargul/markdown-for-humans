@@ -881,5 +881,10 @@
   "~{0} min read": "~{0} min de leitura",
   "📊 Document Statistics": "📊 Estatísticas do documento",
   "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "O Feedback não está pronto porque o editor ainda não terminou de carregar. Tente novamente em instantes ou reabra o editor se ele continuar em branco.",
-  "Feedback command could not be delivered. Reopen the editor and try again.": "Não foi possível enviar o comando de feedback ao editor. Reabra o editor e tente novamente."
+  "Feedback command could not be delivered. Reopen the editor and try again.": "Não foi possível enviar o comando de feedback ao editor. Reabra o editor e tente novamente.",
+  "Edit anyway": "Editar mesmo assim",
+  "This edit changed how the block reads in the file, because the editor rewrote its Markdown.": "Esta edição mudou como o bloco é lido no arquivo, porque o editor reescreveu o Markdown dele.",
+  "This edit removed {0} from the block, because the editor cannot keep it.": "Esta edição removeu {0} do bloco, porque o editor não consegue mantê-lo.",
+  "This edit removed {0} from the block, because the editor cannot keep them.": "Esta edição removeu {0} do bloco, porque o editor não consegue mantê-los.",
+  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "Este arquivo tem conteúdo que o editor não consegue manter: {0}. Qualquer edição aqui o remove do arquivo."
 }

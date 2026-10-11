@@ -596,6 +596,66 @@ describe('FeedbackSnapshotService', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('finalizes a document whose definitions are marker blocks, one anchor per descriptor', () => {
+    const service = new FeedbackSnapshotService();
+    const sourceText = [
+      '## [Unreleased]',
+      '',
+      '[Unreleased]: https://github.com/example/repo/compare/v1.0.0...HEAD',
+      // The editor trims a marker block's text, so edge whitespace must not count.
+      '  [1.0.0]: https://github.com/example/repo/releases/tag/v1.0.0  ',
+      '',
+    ].join('\n');
+    const source = requirePrepared(service, sourceText);
+    const blocks = [
+      block(0, 'heading', '## [Unreleased](https://github.com/example/repo/compare/v1.0.0...HEAD)'),
+      block(1, 'html', '[Unreleased]: https://github.com/example/repo/compare/v1.0.0...HEAD'),
+      block(2, 'html', '[1.0.0]: https://github.com/example/repo/releases/tag/v1.0.0'),
+    ];
+    const result = service.finalize({
+      source,
+      currentDocumentVersion: 7,
+      splitReports: [splitReport(sourceText)],
+      renderer: rendererReport(sourceText),
+      descriptors: { revision: 3, blocks },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.snapshot.blocks.map(fingerprint => fingerprint.ordinal)).toEqual([0, 1, 2]);
+    expect(result.snapshot.anchorMap.blocks).toEqual([
+      { ordinal: 0, kind: 'heading', startLine: 1, endLine: 1 },
+      { ordinal: 1, kind: 'html', startLine: 3, endLine: 3 },
+      { ordinal: 2, kind: 'html', startLine: 4, endLine: 4 },
+    ]);
+    // The two definitions render to the same nothing; their proofs must still differ.
+    expect(result.snapshot.blocks[1].contentSha256).not.toBe(
+      result.snapshot.blocks[2].contentSha256
+    );
+  });
+
+  it('refuses to start when a definition marker does not match the saved file', () => {
+    const service = new FeedbackSnapshotService();
+    const sourceText = '## [Unreleased]\n\n[Unreleased]: https://example.com/a\n';
+    const source = requirePrepared(service, sourceText);
+    const result = service.finalize({
+      source,
+      currentDocumentVersion: 7,
+      splitReports: [splitReport(sourceText)],
+      renderer: rendererReport(sourceText),
+      descriptors: {
+        revision: 3,
+        blocks: [
+          block(0, 'heading', '## [Unreleased](https://example.com/a)'),
+          block(1, 'html', '[Unreleased]: https://example.com/b'),
+        ],
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('block-map-mismatch');
+  });
+
   it('still rejects a canonical link that does not match the resolved reference target', () => {
     const service = new FeedbackSnapshotService();
     const sourceText = [

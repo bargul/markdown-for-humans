@@ -135,6 +135,77 @@ describe('definitions in unusual places', () => {
   });
 });
 
+// marked makes no token for a definition whose label is already defined, so its
+// line had no marker block and the next save deleted it.
+describe('repeated definitions', () => {
+  afterEach(() => document.body.replaceChildren());
+
+  const REPEATED: Array<[string, string]> = [
+    ['the same label on the next line', '[a]: https://one.example\n[a]: https://two.example'],
+    [
+      'a label that differs only by case',
+      '[docs]: https://one.example\n[DOCS]: https://two.example',
+    ],
+    [
+      'the same label three times',
+      '[a]: https://1.example\n[a]: https://2.example\n[a]: https://3.example',
+    ],
+    [
+      'the same label later in the document',
+      '[a]: https://one.example\n\nBetween.\n\n[a]: https://two.example',
+    ],
+    ['an exact copy of a definition', '[a]: https://one.example\n[a]: https://one.example'],
+  ];
+
+  it.each(REPEATED)('saves %s untouched when nothing is edited', (_name, definitions) => {
+    const markdown = `# Title\n\nSee [a] and [docs].\n\n${definitions}\n\nEnd.`;
+    const editor = createEditor();
+    setMarkdownContentPreservingSource(editor, markdown);
+    expect(getEditorMarkdownForSync(editor)).toBe(markdown);
+    editor.destroy();
+  });
+
+  it.each(REPEATED)('keeps %s when the heading is edited', (_name, definitions) => {
+    const markdown = `# Title\n\nSee [a] and [docs].\n\n${definitions}\n\nEnd.`;
+    const editor = createEditor();
+    setMarkdownContentPreservingSource(editor, markdown);
+    appendToHeading(editor);
+    expect(getEditorMarkdownForSync(editor)).toBe(markdown.replace('# Title', '# Title EDITED'));
+    editor.destroy();
+  });
+
+  it('still sends a reference link to the first definition', () => {
+    const editor = createEditor();
+    setMarkdownContentPreservingSource(
+      editor,
+      'See [a].\n\n[a]: https://one.example\n[a]: https://two.example'
+    );
+    const hrefs: string[] = [];
+    editor.state.doc.descendants(node => {
+      node.marks.forEach(mark => {
+        if (mark.type.name === 'link') hrefs.push(String(mark.attrs.href));
+      });
+    });
+    expect(hrefs).toEqual(['https://one.example']);
+    editor.destroy();
+  });
+
+  it('shows one marker line for each definition', () => {
+    const editor = createEditor();
+    setMarkdownContentPreservingSource(
+      editor,
+      'See [a].\n\n[a]: https://one.example\n[a]: https://two.example'
+    );
+    const markers: string[] = [];
+    editor.state.doc.forEach(node => {
+      if (node.type.name === 'htmlComment')
+        markers.push(node.textContent || String(node.attrs.content ?? ''));
+    });
+    expect(markers).toHaveLength(2);
+    editor.destroy();
+  });
+});
+
 describe('comment at the end of a heading', () => {
   afterEach(() => document.body.replaceChildren());
 

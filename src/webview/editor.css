@@ -4793,6 +4793,68 @@ body[data-feedback-comments-state='expanded'] .feedback-frame-label {
   outline-offset: 2px;
 }
 
+/* Source the rich view cannot keep: shown when a file holds such content, and
+   after an edit removed some. Warning colors, never an error: the file is intact
+   until the user edits. It sits at the bottom: the toolbar wraps to two rows in a
+   narrow pane, and a notice below it would cover the document's title. */
+.source-loss-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  z-index: 229;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  box-sizing: border-box;
+  width: min(680px, calc(100vw - 32px));
+  gap: 8px 10px;
+  padding: 9px 10px;
+  color: var(--vscode-inputValidation-warningForeground, var(--vscode-foreground));
+  /* The widget background keeps text readable when a theme's warning background has alpha. */
+  background:
+    linear-gradient(
+      var(--vscode-inputValidation-warningBackground, transparent),
+      var(--vscode-inputValidation-warningBackground, transparent)
+    ),
+    var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid
+    var(--vscode-inputValidation-warningBorder, var(--vscode-editorWarning-foreground));
+  border-radius: 7px;
+  box-shadow: 0 8px 28px var(--vscode-widget-shadow);
+  transform: translateX(-50%);
+  font: 12px/1.4 var(--vscode-font-family);
+}
+
+.source-loss-banner-message {
+  flex: 1 1 260px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-loss-banner-action {
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 4px 10px;
+  color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+  background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 5px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.source-loss-banner-action:hover {
+  background: var(
+    --vscode-button-secondaryHoverBackground,
+    var(--vscode-button-hoverBackground, var(--vscode-button-background))
+  );
+}
+
+.source-loss-banner-action:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
 .feedback-live-region {
   position: fixed;
   width: 1px;

@@ -881,5 +881,10 @@
   "~{0} min read": "Время чтения: ~{0} мин",
   "📊 Document Statistics": "📊 Статистика документа",
   "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "Режим замечаний не готов, так как редактор ещё не загрузился. Повторите попытку чуть позже или откройте редактор заново, если он остаётся пустым.",
-  "Feedback command could not be delivered. Reopen the editor and try again.": "Не удалось передать команду режима замечаний в редактор. Откройте редактор заново и повторите попытку."
+  "Feedback command could not be delivered. Reopen the editor and try again.": "Не удалось передать команду режима замечаний в редактор. Откройте редактор заново и повторите попытку.",
+  "Edit anyway": "Всё равно редактировать",
+  "This edit changed how the block reads in the file, because the editor rewrote its Markdown.": "Эта правка изменила то, как блок читается в файле, потому что редактор переписал его Markdown.",
+  "This edit removed {0} from the block, because the editor cannot keep it.": "Эта правка удалила {0} из блока, потому что редактор не может это сохранить.",
+  "This edit removed {0} from the block, because the editor cannot keep them.": "Эта правка удалила {0} из блока, потому что редактор не может их сохранить.",
+  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "В этом файле есть содержимое, которое редактор не может сохранить: {0}. Любая правка здесь удалит его из файла."
 }
