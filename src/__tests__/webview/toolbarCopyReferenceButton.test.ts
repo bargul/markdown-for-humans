@@ -12,13 +12,15 @@ const createEditor = () => {
 };
 
 describe('toolbar Copy Reference for AI button', () => {
-  it('sits in the copy group right after Copy MD and leaves Feedback first', () => {
+  it('sits right after the Feedback button, which stays first', () => {
     const toolbar = createFormattingToolbar(createEditor());
     const button = toolbar.querySelector('.copy-reference-button') as HTMLElement;
 
     expect(button).toBeTruthy();
-    expect(button.previousElementSibling?.classList.contains('copy-button')).toBe(true);
     expect(toolbar.firstElementChild?.hasAttribute('data-feedback-start')).toBe(true);
+    expect(button.previousElementSibling).toBe(toolbar.firstElementChild);
+    // The two AI actions form one group: the separator comes after them.
+    expect(button.nextElementSibling?.classList.contains('toolbar-separator')).toBe(true);
   });
 
   it('says what it copies and shows the @ icon', () => {

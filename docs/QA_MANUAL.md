@@ -347,7 +347,7 @@ Hover an image to reveal a **three-dots** menu, with:
 
 **How to use**
 
-- Place the caret, or select a range, then Toolbar → “@” (or Command Palette → “Copy Reference for AI”) → paste into a plain text buffer.
+- Place the caret, or select a range, then Toolbar → “@”, the second button, beside Log feedback for an LLM (or Command Palette → “Copy Reference for AI”) → paste into a plain text buffer.
 - Repeat with the caret in: a hard-wrapped paragraph, a nested list item, a table cell, a line of a code block, frontmatter.
 - Repeat with unsaved changes, in an untitled file, and while Feedback is active.
 

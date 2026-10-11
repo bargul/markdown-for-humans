@@ -60,12 +60,12 @@
 
 **Entry points:**
 - Command Palette: **Markdown Editor for Humans: Copy Reference for AI**, visible and enabled only when `activeCustomEditorId == 'markdownForHumans.editor'`.
-- Toolbar: one `@` icon button in the copy and export group, directly after **Copy MD**. Tooltip: "Copy reference for AI (@file#L10-14)". Feedback stays the first control.
-- Keybinding: none shipped. README documents how to bind one.
+- Toolbar: one `@` icon button directly after the Feedback button, before the first separator. Tooltip: "Copy reference for AI (@file#L10-14)". Feedback stays the first control.
+- Keybinding: none shipped and none suggested. The command can be bound in Keyboard Shortcuts.
 
 ```text
-[Feedback] | B I S <> H1 H2 H3 H+ | lists | table quote ... math | Outline Source | Copy MD  @  Export | Audit  Gear
-                                                                                              ^ new, same group as the other copy action
+[Feedback] [@] | B I S <> H1 H2 H3 H+ | lists | table quote ... math | Outline Source | Copy MD  Export | Audit  Gear
+            ^ new: the two AI actions sit together
 ```
 
 **Flow:**
@@ -151,7 +151,8 @@ webview: toast
   - [x] Jest: `package.json` and `extension.ts` wiring, host handler, toolbar button
   - [x] Extension Development Host: command to clipboard, including the save-first rule
   - [x] Real VS Code window pass: toolbar click, toast, click selections, save-first, Feedback, spaces
-  - [ ] By hand: a user keybinding, a drag selection across blocks
+  - [x] By the owner: a user keybinding and a drag selection across blocks
+  - [ ] By hand: the Command Palette entry by typing, light theme
 
 ---
 
@@ -194,14 +195,21 @@ webview: toast
 - **Driver lesson:** early runs failed about one time in three. The cause was the test driver, which attached and detached a viewport override on every call and so resized the window around each click. One persistent session removed every failure.
 - **Still not done:** a key press (a user keybinding firing while the rich view has focus, and finding the command by typing in the Command Palette), a drag selection across blocks, a light theme look, Windows and Linux.
 
+### 2026-10-11 - Owner's test in a real window
+
+- **Passed:** Option+K in a table row (`#L27`), Ctrl+Option+K in a wrapped paragraph line (`#L11`), a drag selection from line 11 into the table followed by the `@` button (`#L11-26`).
+- **Failed:** Option+K also typed a ring character on a Mac. With a selection in the code block it replaced the selected code. See Decisions.
+- **Changed as a result:** the README no longer suggests a shortcut; the `@` button moved beside the Feedback button.
+- **Not answered in that run:** the Command Palette entry, the tooltip text, light theme.
+
 ---
 
 ## 8. Decisions & Tradeoffs
 
 - **Line format `#L10-14`: settled.** Read from Claude Code 2.1.296 itself. Its CLI parses mentions with `^([^#]+)(?:#L(\d+)(?:-(\d+))?)?(?:#[^#]*)?$`, so only the `#L` form gives it a line range; a bare `#10-14` attaches the whole file there. Its VS Code panel accepts both (`/#L?\d+(?:-\d+)?$/`) and writes the bare form, while its own terminal command (`claude-code.insertAtMentioned`) writes `#L`. `#L10-14` is therefore the one form that works in both.
 - **Unsaved changes: save first.** The reference must match what the agent reads from disk. Refusing costs a second keypress every time; warning produces a reference that is wrong until the user saves. Saving is what the user would do next anyway, and Feedback already saves on entry. The toast says when a save happened. No dialog, no setting.
-- **No default keybinding.** Alt+C is Toggle Find Case Sensitive on Windows and Linux, including in this editor's find widget, and the retirement guard forbids it. Feedback commands also ship unbound. README suggests Alt+K, the chord Claude Code uses for the same action in text editors, as a personal binding.
-- **Toolbar button in the copy group.** The September decision was that Feedback is the first control; a button beside Copy MD does not compete with that. Issue 140's reporter could not find the feature after the update, which is a discoverability failure a palette-only command repeats.
+- **No default keybinding, and no suggested one.** Alt+C is Toggle Find Case Sensitive on Windows and Linux, including in this editor's find widget, and the retirement guard forbids it. Alt+K, which the README first suggested because Claude Code uses it in text editors, failed the owner's test on a Mac: Option+K ran the command and also typed a ring character into the document (replacing a selection), and save-first then wrote that character to disk. Ctrl+Option+K worked cleanly, so user keybindings do fire while the rich view has focus; the README now only says the command can be bound and warns against Option plus a letter on a Mac.
+- **Toolbar button beside Feedback (owner's call, 2026-10-11).** First built in the copy group after Copy MD; moved to second position so the two AI actions sit together. Feedback is still the first control. Issue 140's reporter could not find the feature after the update, which a palette-only command would repeat.
 - **Toast, not status bar.** Every other toolbar action in this editor confirms inside the editor, and the status bar can be hidden. The toast is not modal and shows the reference.
 - **Bare `@path` when nothing can be verified,** instead of refusing. The path alone is true and still useful.
 - **A path with spaces is quoted, with the line suffix inside the quotes:** `@"release notes/v1 draft.md#L3-5"`. Both Claude Code parsers read `@"..."` as one mention; unquoted, the mention would end at the first space. A path containing `#` or `"` is still copied as it is; Claude Code itself cannot reference such a path.
