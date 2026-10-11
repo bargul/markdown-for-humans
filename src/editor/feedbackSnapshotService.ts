@@ -255,7 +255,10 @@ function frontmatterPayload(markdown: string): string {
 }
 
 /** Link reference definitions collected from markdown-it's `env.references`. */
-type MarkdownReferenceMap = Record<string, { readonly title: string; readonly href: string }>;
+export type MarkdownReferenceMap = Record<
+  string,
+  { readonly title: string; readonly href: string }
+>;
 
 function semanticBlockPayload(
   kind: FeedbackAnchorKind,
@@ -283,6 +286,63 @@ function blockFingerprint(
   const payload = semanticBlockPayload(kind, markdown, references);
   if (payload === null) return null;
   return computeFeedbackTextSha256(`${kind}\0${payload}`);
+}
+
+/**
+ * Fingerprint of a canonical block when it renders the same content as its
+ * source lines, else null.
+ */
+function equivalentBlockFingerprint(
+  kind: FeedbackAnchorKind,
+  sourceMarkdown: string,
+  canonicalMarkdown: string,
+  references?: MarkdownReferenceMap
+): string | null {
+  const sourceFingerprint = blockFingerprint(kind, sourceMarkdown, references);
+  const canonicalFingerprint = blockFingerprint(kind, canonicalMarkdown);
+
+  // Keep the historical soft-wrap fingerprint first. The rich renderer
+  // may instead serialize its visible single-newline break as `  \n`, so
+  // accept that second, explicit rendering contract for non-frontmatter
+  // blocks without weakening frontmatter's source-derived comparison.
+  if (
+    sourceFingerprint === null ||
+    canonicalFingerprint === null ||
+    (sourceFingerprint !== canonicalFingerprint &&
+      (kind === 'frontmatter' ||
+        !isMarkdownRendererEquivalent(sourceMarkdown, canonicalMarkdown, references)))
+  ) {
+    return null;
+  }
+  return canonicalFingerprint;
+}
+
+/**
+ * Whether a rich-view block and a span of source lines render the same content.
+ *
+ * @param kind - Anchor kind of the block
+ * @param sourceMarkdown - The block's source lines joined with `\n`
+ * @param canonicalMarkdown - The rich view's serialization of the block
+ * @param references - Link reference definitions of the whole source document
+ */
+export function isFeedbackBlockContentEquivalent(
+  kind: FeedbackAnchorKind,
+  sourceMarkdown: string,
+  canonicalMarkdown: string,
+  references?: MarkdownReferenceMap
+): boolean {
+  return equivalentBlockFingerprint(kind, sourceMarkdown, canonicalMarkdown, references) !== null;
+}
+
+/**
+ * Collect link reference definitions ("[label]: url") from a whole document.
+ * A block rendered alone needs them to resolve a reference link whose
+ * definition lives in another block.
+ */
+export function collectMarkdownReferences(sourceText: string): MarkdownReferenceMap | undefined {
+  const environment: { references?: MarkdownReferenceMap } = {};
+  markdownParser.render(sourceText, environment);
+  return environment.references;
 }
 
 function extractSourceBlock(
@@ -547,29 +607,19 @@ export class FeedbackSnapshotService {
     // "## [Unreleased]" heading) can't otherwise resolve a shortcut reference
     // link whose definition lives in a different block, even though the rich
     // editor parses the full document and resolves it correctly.
-    const sourceReferencesEnv: { references?: MarkdownReferenceMap } = {};
-    markdownParser.render(input.source.sourceText, sourceReferencesEnv);
-    const sourceReferences = sourceReferencesEnv.references;
+    const sourceReferences = collectMarkdownReferences(input.source.sourceText);
 
     const fingerprints: FeedbackBlockContentFingerprint[] = [];
     for (let index = 0; index < anchorResult.map.blocks.length; index += 1) {
       const anchor = anchorResult.map.blocks[index];
       const descriptor = input.descriptors.blocks[index];
-      const sourceMarkdown = extractSourceBlock(sourceLines, anchor);
-      const sourceFingerprint = blockFingerprint(anchor.kind, sourceMarkdown, sourceReferences);
-      const canonicalFingerprint = blockFingerprint(anchor.kind, descriptor.markdown);
-
-      // Keep the historical soft-wrap fingerprint first. The rich renderer
-      // may instead serialize its visible single-newline break as `  \n`, so
-      // accept that second, explicit rendering contract for non-frontmatter
-      // blocks without weakening frontmatter's source-derived comparison.
-      if (
-        sourceFingerprint === null ||
-        canonicalFingerprint === null ||
-        (sourceFingerprint !== canonicalFingerprint &&
-          (anchor.kind === 'frontmatter' ||
-            !isMarkdownRendererEquivalent(sourceMarkdown, descriptor.markdown, sourceReferences)))
-      ) {
+      const canonicalFingerprint = equivalentBlockFingerprint(
+        anchor.kind,
+        extractSourceBlock(sourceLines, anchor),
+        descriptor.markdown,
+        sourceReferences
+      );
+      if (canonicalFingerprint === null) {
         return failure(
           'block-content-mismatch',
           'Canonical block content does not match the saved source snapshot.'
