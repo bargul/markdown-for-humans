@@ -168,7 +168,9 @@ export function activate(context: vscode.ExtensionContext) {
         if (text) await panel.webview.postMessage({ type: 'pastePlainText', text });
       } catch (error) {
         console.error('[MD4H] Paste as plain text failed:', error);
-        vscode.window.showErrorMessage('Markdown Editor for Humans: could not read the clipboard.');
+        vscode.window.showErrorMessage(
+          vscode.l10n.t('Markdown Editor for Humans: could not read the clipboard.')
+        );
       }
     })
   );

@@ -210,7 +210,7 @@
       },
       {
         "command": "markdownForHumans.pastePlainText",
-        "title": "Markdown Editor for Humans: Paste as Plain Text"
+        "title": "%command.pastePlainText.title%"
       },
       {
         "command": "markdownForHumans.feedback.start",

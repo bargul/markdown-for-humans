@@ -406,6 +406,7 @@
   "MD/File type filter: Markdown files": "MD",
   "Mark the screenshot if useful, then describe what should change.": "Marque la captura de pantalla si resulta útil y, después, describa qué debe cambiar.",
   "Markdown Editor for Humans will reduce the resolution of this image to fit the size. This action cannot be undone, but a backup will be created.": "Markdown Editor for Humans reducirá la resolución de esta imagen para ajustarla al tamaño. Esta acción no se puede deshacer, pero se creará una copia de seguridad.",
+  "Markdown Editor for Humans: could not read the clipboard.": "Markdown Editor for Humans: no se pudo leer el portapapeles.",
   "Markdown Editor for Humans: formatting shortcuts disabled": "Markdown Editor for Humans: métodos abreviados de formato deshabilitados",
   "Markdown Editor for Humans: formatting shortcuts enabled": "Markdown Editor for Humans: métodos abreviados de formato habilitados",
   "Math": "Ecuación",

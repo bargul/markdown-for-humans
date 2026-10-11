@@ -406,6 +406,7 @@
   "MD/File type filter: Markdown files": "MD",
   "Mark the screenshot if useful, then describe what should change.": "必要に応じてスクリーンショットに印を付けてから、変更すべき点を説明してください。",
   "Markdown Editor for Humans will reduce the resolution of this image to fit the size. This action cannot be undone, but a backup will be created.": "Markdown Editor for Humans は、サイズに合わせてこの画像の解像度を下げます。この操作は元に戻せませんが、バックアップが作成されます。",
+  "Markdown Editor for Humans: could not read the clipboard.": "Markdown Editor for Humans: クリップボードを読み取れませんでした。",
   "Markdown Editor for Humans: formatting shortcuts disabled": "Markdown Editor for Humans: 書式設定のショートカットを無効にしました",
   "Markdown Editor for Humans: formatting shortcuts enabled": "Markdown Editor for Humans: 書式設定のショートカットを有効にしました",
   "Math": "数式",

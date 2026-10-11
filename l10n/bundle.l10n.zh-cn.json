@@ -406,6 +406,7 @@
   "MD/File type filter: Markdown files": "MD",
   "Mark the screenshot if useful, then describe what should change.": "如有需要，可先在截图上标注，然后描述需要更改的内容。",
   "Markdown Editor for Humans will reduce the resolution of this image to fit the size. This action cannot be undone, but a backup will be created.": "Markdown Editor for Humans 将降低此图片的分辨率以适应该尺寸。此操作无法撤消，但会创建备份。",
+  "Markdown Editor for Humans: could not read the clipboard.": "Markdown Editor for Humans：无法读取剪贴板。",
   "Markdown Editor for Humans: formatting shortcuts disabled": "Markdown Editor for Humans：已禁用格式快捷键",
   "Markdown Editor for Humans: formatting shortcuts enabled": "Markdown Editor for Humans：已启用格式快捷键",
   "Math": "公式",

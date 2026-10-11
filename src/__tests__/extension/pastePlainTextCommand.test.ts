@@ -88,8 +88,14 @@ describe('Paste as Plain Text command', () => {
 
   it('is contributed under the product name so it can be found and rebound', () => {
     const command = packageJson.contributes.commands.find(entry => entry.command === COMMAND_ID);
+    const english = JSON.parse(
+      readFileSync(resolve(__dirname, '../../../package.nls.json'), 'utf8')
+    ) as Record<string, string>;
 
-    expect(command?.title).toBe('Markdown Editor for Humans: Paste as Plain Text');
+    expect(command?.title).toBe('%command.pastePlainText.title%');
+    expect(english['command.pastePlainText.title']).toBe(
+      'Markdown Editor for Humans: Paste as Plain Text'
+    );
   });
 
   it('binds Ctrl+Shift+V and Cmd+Shift+V in this editor only', () => {
