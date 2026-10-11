@@ -171,7 +171,7 @@ vsce publish
 npm run publish:release  # Runs: vsce publish (current version)
 ```
 
-### Publish to Open VSX Registry (For Cursor, Windsurf, VSCodium & More)
+### Publish to Open VSX Registry (For Cursor, Devin Desktop, VSCodium & More)
 
 Open VSX is an open-source marketplace used by multiple VS Code-compatible editors.
 
@@ -201,7 +201,7 @@ ovsx publish -p <your-token>
 
 - ✅ **VS Code** (from VS Code Marketplace)
 - ✅ **Cursor** (from Open VSX)
-- ✅ **Windsurf** (from Open VSX)
+- ✅ **Devin Desktop**, formerly Windsurf (from Open VSX)
 - ✅ **VSCodium** (from Open VSX)
 - ✅ **Gitpod** (from Open VSX)
 - ✅ **Eclipse Theia** (from Open VSX)
@@ -758,7 +758,7 @@ npm run package:release    # Release package (via vscode:prepublish hook)
 # Publishing
 vsce publish patch         # Publish to VS Code Marketplace (auto-bumps version)
 npm run publish:release    # Or use: npm run publish:release (runs vsce publish)
-npm run publish:ovsx:release  # Publish to Open VSX (for Cursor & Windsurf)
+npm run publish:ovsx:release  # Publish to Open VSX (for Cursor & Devin Desktop)
                            # First time: ovsx create-namespace concretio -p <token>
 ```
 

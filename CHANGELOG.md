@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+---
+
+## [0.4.4] - 2026-10-11
+
 ### Added
 
 - **ABAP syntax highlighting for code blocks.** ` ```abap ` fences are highlighted (keywords, strings, comments), and ABAP is available in the code block language menu. `sap-abap` works as a fence alias. The grammar comes from the community `highlightjs-sap-abap` package, since highlight.js itself ships no ABAP grammar.
@@ -17,6 +21,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - A link to another Markdown file opens in this editor. It opened in VS Code's text editor, even when this editor was your default for Markdown.
 - Links that carry a section (`guide.md#install`) or encoded characters (`my%20notes.md`) open the file. They reported "File not found".
 - C# is in the code block language menu. C# code was already highlighted, but the menu did not offer it.
+- Word export keeps code blocks (one monospace line each) and block math (as its LaTeX source). Both were dropped from the document.
+- Word export shows checklist items as ☐ and ☑ instead of the hidden "Task item checkbox for ..." text.
+- The toolbar gear is labeled "Extension settings"; it was labeled "Export settings" but opens the extension's settings.
 
 ---
 
@@ -49,6 +56,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- The editor no longer stays blank, with no toolbar, when its view is slow to load. The document was sent to the view once and could arrive before the view was listening; it is now sent again when the view reports ready. (Listed here on 2026-10-11; the fix shipped in 0.4.2.)
 - Saving after an edit elsewhere no longer deletes the tags of an HTML wrapper that has Markdown inside it. `<div align="center">`, `<center>`, `<p>` and `<details>` blocks with blank lines between the tags and their content lost their opening or closing tag on the next save. The tags now show as muted markers and save exactly as written.
 - Pressing Undo repeatedly no longer empties the file. The first load of a document was an undo step, so one Undo too many blanked the editor and synced an empty file to VS Code. Undo now stops at the document you opened.
 - Editing a paragraph no longer strips `<kbd>`, `<sub>` and `<sup>`. `Press <kbd>Ctrl</kbd>+<kbd>C</kbd>` became `Press Ctrl+C` once the paragraph was edited.
