@@ -870,5 +870,7 @@
   "{0}: Exact rendered target for {1} could not be resolved. Safe block-level fallback is shown.": "{0}: {1} のレンダリング上の正確な対象を特定できませんでした。代わりに、安全なブロック単位の表示にしています。",
   "{0}: Exact rendered targets for {1} could not be resolved. Safe block-level fallback is shown.": "{0}: {1} のレンダリング上の正確な対象を特定できませんでした。代わりに、安全なブロック単位の表示にしています。",
   "~{0} min read": "読了時間 約 {0} 分",
-  "📊 Document Statistics": "📊 ドキュメントの統計情報"
+  "📊 Document Statistics": "📊 ドキュメントの統計情報",
+  "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "エディターの読み込みが完了していないため、フィードバックの準備ができていません。しばらくしてからもう一度試すか、エディターが空白のままの場合は開き直してください。",
+  "Feedback command could not be delivered. Reopen the editor and try again.": "フィードバック コマンドをエディターに送信できませんでした。エディターを開き直して、もう一度お試しください。"
 }

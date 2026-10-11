@@ -67,7 +67,7 @@ L10N_LIST=/tmp/hardcoded.txt npx jest src/__tests__/l10n/hardcodedText.test.ts
 
 - Shipped: `l10n/bundle.l10n.<locale>.json` plus `package.nls.<locale>.json` in the repo root. Both must be complete, and they ship together.
 - Draft: the same two files under `l10n/drafts/`. Not packaged, may be partial.
-- A language moves from `drafts/` to `l10n/` only when it is complete and a native reader has reviewed it.
+- A language moves from `drafts/` to `l10n/` only when it is complete. A native reader's review comes first when one is available; the owner may ship an AI reviewed language marked as open to correction, as the first five were (`l10n/README.md` lists each language's state).
 - VS Code picks the bundle from the display language. There is no language setting in this extension.
 
 ## Tests

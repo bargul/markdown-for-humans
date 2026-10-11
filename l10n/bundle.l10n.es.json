@@ -870,5 +870,7 @@
   "{0}: Exact rendered target for {1} could not be resolved. Safe block-level fallback is shown.": "{0}: No se pudo resolver el destino renderizado exacto de {1}. Se muestra una alternativa segura a nivel de bloque.",
   "{0}: Exact rendered targets for {1} could not be resolved. Safe block-level fallback is shown.": "{0}: No se pudieron resolver los destinos renderizados exactos de {1}. Se muestra una alternativa segura a nivel de bloque.",
   "~{0} min read": "~{0} min de lectura",
-  "📊 Document Statistics": "📊 Estadísticas del documento"
+  "📊 Document Statistics": "📊 Estadísticas del documento",
+  "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "La revisión no está lista porque el editor no ha terminado de cargarse. Vuelva a intentarlo en un momento, o vuelva a abrir el editor si sigue en blanco.",
+  "Feedback command could not be delivered. Reopen the editor and try again.": "No se pudo entregar el comando de revisión. Vuelva a abrir el editor y vuelva a intentarlo."
 }

@@ -36,6 +36,12 @@
   "configuration.paragraph.spacingBefore.description": "段落前的间距，以磅为单位 (margin-top)。默认值：0pt",
   "configuration.paragraph.spacingAfter.description": "段落后的间距，以磅为单位 (margin-bottom)。默认值：0pt",
   "configuration.zoom.description": "编辑器的缩放级别（百分比）。100 = 默认大小，150 = 放大 50%，依此类推。",
+  "configuration.font.family.markdownDescription": "正文和标题使用的字体。可以使用计算机上已安装的任何字体；多个字体之间用英文逗号分隔，将使用找到的第一个字体。留空则使用标准字体。示例：`Atkinson Hyperlegible, sans-serif`\n\n代码仍使用等宽字体，公式和图表仍使用各自的字体。如果某个字体未安装，将使用标准字体。PDF 和 Word 导出仍使用各自的字体。",
+  "configuration.font.weight.markdownDescription": "正文的字体粗细，范围为 100（极细）到 900（特粗）。400 为常规粗细。示例：`500` 可让文字略粗一些。\n\n你使用的字体必须包含所选的粗细。标题和粗体文本保留各自的粗细。",
+  "configuration.font.lineHeight.markdownDescription": "正文的行高，以字体大小的倍数表示。示例：`1.8` 可让行与行之间更宽松。\n\n适用于段落、列表、表格、引用块和提示块。标题和代码保留各自的行高。",
+  "configuration.font.letterSpacing.markdownDescription": "字符之间的额外间距，以字体大小的比例表示。0 表示保持标准间距。示例：`0.05` 可让字符排列得略宽松一些。\n\n适用于正文和标题。代码和公式不受影响。",
+  "configuration.font.wordSpacing.markdownDescription": "单词之间的额外间距，以字体大小的比例表示。0 表示保持标准间距。示例：`0.16` 可让单词之间隔得更开，在增大字母间距时会有帮助。\n\n适用于正文和标题。代码和公式不受影响。",
+  "configuration.font.useEditorFont.markdownDescription": "正文使用 VS Code 编辑器字体：`editor.fontFamily`、`editor.fontWeight` 和 `editor.fontSize`，包括在 settings.json 中 `\"[markdown]\"` 下设置的值。VS Code 的默认编辑器字体是等宽字体，因此仅当你已设置了适合阅读的编辑器字体时才开启此项。\n\n更改 `#markdownForHumans.font.family#` 和 `#markdownForHumans.font.weight#` 后，将优先使用这两项设置。",
   "configuration.enableMath.description": "使用 KaTeX 渲染 LaTeX 数学公式。行内公式使用 $...$，行间公式使用 $$...$$。切换此设置后需要重新打开编辑器。",
   "configuration.formattingShortcuts.enabled.description": "启用后，在编辑器内按 Cmd/Ctrl+B、+I 和 +U 可切换粗体/斜体/下划线。如果你依赖使用相同组合键的 VS Code 键绑定（例如重新绑定到 Cmd+B 的侧边栏切换），并希望在此编辑器中打开 Markdown 文件时这些键绑定仍然有效，请禁用此项。"
 }

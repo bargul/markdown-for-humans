@@ -870,5 +870,7 @@
   "{0}: Exact rendered target for {1} could not be resolved. Safe block-level fallback is shown.": "{0}：无法解析 {1} 的精确渲染目标。已回退为安全的块级显示。",
   "{0}: Exact rendered targets for {1} could not be resolved. Safe block-level fallback is shown.": "{0}：无法解析 {1} 的精确渲染目标。已回退为安全的块级显示。",
   "~{0} min read": "阅读约 {0} 分钟",
-  "📊 Document Statistics": "📊 文档统计"
+  "📊 Document Statistics": "📊 文档统计",
+  "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "编辑器尚未加载完成，因此反馈尚未就绪。请稍后重试；如果编辑器一直空白，请重新打开编辑器。",
+  "Feedback command could not be delivered. Reopen the editor and try again.": "反馈命令未能送达。请重新打开编辑器后重试。"
 }

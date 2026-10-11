@@ -870,5 +870,7 @@
   "{0}: Exact rendered target for {1} could not be resolved. Safe block-level fallback is shown.": "{0}: не удалось определить точный отрисованный объект для {1}. Показан безопасный резервный вариант на уровне блока.",
   "{0}: Exact rendered targets for {1} could not be resolved. Safe block-level fallback is shown.": "{0}: не удалось определить точные отрисованные объекты для {1}. Показан безопасный резервный вариант на уровне блока.",
   "~{0} min read": "Время чтения: ~{0} мин",
-  "📊 Document Statistics": "📊 Статистика документа"
+  "📊 Document Statistics": "📊 Статистика документа",
+  "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "Режим замечаний не готов, так как редактор ещё не загрузился. Повторите попытку чуть позже или откройте редактор заново, если он остаётся пустым.",
+  "Feedback command could not be delivered. Reopen the editor and try again.": "Не удалось передать команду режима замечаний в редактор. Откройте редактор заново и повторите попытку."
 }
