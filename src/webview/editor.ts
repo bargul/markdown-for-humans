@@ -63,6 +63,7 @@ import { hideTocOverlay, isTocVisible, toggleTocOverlay } from './features/tocOv
 import { hideSearchOverlay, isSearchVisible, showSearchOverlay } from './features/searchOverlay';
 import { showLinkDialog } from './features/linkDialog';
 import { processPasteContent, parseFencedCode } from './utils/pasteHandler';
+import { insertPlainText, readsAsMarkdown } from './utils/plainTextPaste';
 import { copySelectionAsMarkdown } from './utils/copyMarkdown';
 import { isUndoRedoShortcut } from './utils/undoRedoShortcut';
 import { shouldAutoLink } from './utils/linkValidation';
@@ -2231,6 +2232,25 @@ window.addEventListener('message', async (event: MessageEvent) => {
         }
         break;
       }
+      case 'pastePlainText': {
+        // Sent by the pastePlainText command (Ctrl/Cmd+Shift+V) with the
+        // clipboard's text; VS Code keeps that chord from firing a paste event.
+        if (!editor || typeof message.text !== 'string') break;
+        if (isFeedbackEditingLocked() || isFocusInOwnField()) break;
+        if (message.mode === undefined) {
+          // Text that would be read as Markdown on the next load is not
+          // inserted yet: the host asks how to paste it and sends it again
+          // with a mode.
+          if (readsAsMarkdown(editor, message.text)) {
+            vscode.postMessage({ type: 'pastePlainText.choose', text: message.text });
+          } else {
+            insertPlainText(editor, message.text);
+          }
+        } else if (['plain', 'code', 'markdown'].includes(message.mode)) {
+          insertPlainText(editor, message.text, message.mode);
+        }
+        break;
+      }
       case 'toggleTocOutlineView':
         // Sent by the toggleTocOutlineView command; same path as the toolbar button.
         window.dispatchEvent(new CustomEvent('toggleTocOutline'));
@@ -2953,6 +2973,9 @@ window.addEventListener('exportDocument', async (event: Event) => {
   }
 });
 
+const MODAL_OVERLAY_SELECTOR =
+  '.math-editor-overlay, [data-md4h-modal], .feedback-annotation-dialog';
+
 /**
  * Returns true when the event originated inside (or focus is currently inside)
  * a modal that owns its own keyboard/clipboard handling — currently the math
@@ -2960,11 +2983,10 @@ window.addEventListener('exportDocument', async (event: Event) => {
  * events so Ctrl+Z / Ctrl+V / etc. stay scoped to the modal.
  */
 function isEventInsideModalOverlay(event: Event): boolean {
-  const selector = '.math-editor-overlay, [data-md4h-modal], .feedback-annotation-dialog';
   const target = event.target;
-  if (target instanceof Element && target.closest(selector)) return true;
+  if (target instanceof Element && target.closest(MODAL_OVERLAY_SELECTOR)) return true;
   const active = document.activeElement;
-  if (active instanceof Element && active.closest(selector)) return true;
+  if (active instanceof Element && active.closest(MODAL_OVERLAY_SELECTOR)) return true;
   return false;
 }
 
@@ -2982,6 +3004,18 @@ function isPasteTargetedAtEditor(target: EventTarget | null): boolean {
   const node = target as Node;
   if (typeof node.nodeType !== 'number') return true;
   return editorDom.contains(node);
+}
+
+/**
+ * Whether keyboard focus is in a field of its own rather than in the document:
+ * a modal, the search box, the link dialog. A paste that arrives as a host
+ * command has no event target, so this stands in for the target check above.
+ */
+function isFocusInOwnField(): boolean {
+  const active = document.activeElement;
+  if (!active || typeof active.closest !== 'function') return false;
+  if (active.closest(MODAL_OVERLAY_SELECTOR)) return true;
+  return Boolean(active.closest('input, textarea, select')) && !isPasteTargetedAtEditor(active);
 }
 
 // Handle paste - convert markdown to HTML for proper TipTap rendering
