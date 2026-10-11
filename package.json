@@ -208,6 +208,11 @@
         "title": "Markdown Editor for Humans: Toggle Formatting Shortcuts (Cmd/Ctrl+B/I/U)"
       },
       {
+        "command": "markdownForHumans.copyReferenceForAi",
+        "title": "Markdown Editor for Humans: Copy Reference for AI",
+        "enablement": "activeCustomEditorId == 'markdownForHumans.editor'"
+      },
+      {
         "command": "markdownForHumans.feedback.start",
         "title": "Markdown Editor for Humans: Start Feedback"
       },
@@ -270,6 +275,12 @@
       ]
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "markdownForHumans.copyReferenceForAi",
+          "when": "activeCustomEditorId == 'markdownForHumans.editor'"
+        }
+      ],
       "explorer/context": [
         {
           "command": "markdownForHumans.openFile",
