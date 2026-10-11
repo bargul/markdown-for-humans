@@ -209,6 +209,11 @@
         "title": "%command.toggleFormattingShortcuts.title%"
       },
       {
+        "command": "markdownForHumans.copyReferenceForAi",
+        "title": "%command.copyReferenceForAi.title%",
+        "enablement": "activeCustomEditorId == 'markdownForHumans.editor'"
+      },
+      {
         "command": "markdownForHumans.pastePlainText",
         "title": "%command.pastePlainText.title%"
       },
@@ -281,6 +286,12 @@
       ]
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "markdownForHumans.copyReferenceForAi",
+          "when": "activeCustomEditorId == 'markdownForHumans.editor'"
+        }
+      ],
       "explorer/context": [
         {
           "command": "markdownForHumans.openFile",

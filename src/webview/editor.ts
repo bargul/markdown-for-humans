@@ -82,6 +82,7 @@ import {
   enumerateCanonicalFeedbackBlocks,
   type FeedbackReviewController,
 } from './features/feedbackReview';
+import { describeAiReferenceSelection } from './features/aiReferenceSelection';
 import {
   createFeedbackPeerLockController,
   type FeedbackPeerLockController,
@@ -2236,6 +2237,19 @@ window.addEventListener('message', async (event: MessageEvent) => {
         }
         break;
       }
+      case 'copyReferenceForAi':
+        // Sent by the Copy Reference for AI command; same path as the toolbar button.
+        window.dispatchEvent(new CustomEvent('copyReferenceForAi'));
+        break;
+      case 'copyReferenceForAi.result': {
+        const text = typeof message.message === 'string' ? message.message : '';
+        void import('./features/auditOverlay').then(({ showToast }) => {
+          showToast(text, message.ok === true ? 'success' : 'info', {
+            dedupeKey: 'copy-reference-for-ai',
+          });
+        });
+        break;
+      }
       case 'pastePlainText': {
         // Sent by the pastePlainText command (Ctrl/Cmd+Shift+V) with the
         // clipboard's text; VS Code keeps that chord from firing a paste event.
@@ -2826,6 +2840,25 @@ window.addEventListener('auditDocument', async () => {
 window.addEventListener('copyAsMarkdown', () => {
   if (!editor) return;
   copySelectionAsMarkdown(editor);
+});
+
+// Copy Reference for AI, from the command or the toolbar button. The view says
+// where the selection is; the host reads the line numbers from the saved file,
+// writes the clipboard and replies with the text for the toast.
+window.addEventListener('copyReferenceForAi', () => {
+  if (!editor) return;
+  try {
+    vscode.postMessage({
+      type: 'copyReferenceForAi',
+      selection: describeAiReferenceSelection(editor.state),
+      blocks: enumerateCanonicalFeedbackBlocks(editor),
+    });
+  } catch (error) {
+    console.error('[MD4H] Copy Reference for AI failed:', error);
+    void import('./features/auditOverlay').then(({ showToast }) => {
+      showToast(l10n.t('Could not copy a reference for AI.'), 'info');
+    });
+  }
 });
 
 // Handle insert-math from toolbar buttons

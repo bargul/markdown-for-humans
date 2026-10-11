@@ -135,6 +135,17 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // The rich view owns the selection, so the command only asks the active view
+  // to start the copy; the same path the toolbar button takes.
+  context.subscriptions.push(
+    vscode.commands.registerCommand('markdownForHumans.copyReferenceForAi', () => {
+      const panel = getActiveWebviewPanel();
+      if (panel) {
+        panel.webview.postMessage({ type: 'copyReferenceForAi' });
+      }
+    })
+  );
+
   // Flip the persisted setting (not just webview-local state) so it survives
   // reloads and stays in sync with settings.json, reusing the same
   // onDidChangeConfiguration -> postMessage sync path the setting already has.

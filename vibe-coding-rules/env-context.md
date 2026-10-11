@@ -174,6 +174,7 @@ Shared-runner gates do not prove physical Windows i5/16 GB p95 latency, memory u
 | Inline HTML marks (`<kbd>`, `<sub>`, `<sup>`) | `src/webview/extensions/inlineHtmlMarks.ts`                              |
 | Link click and table right-click helpers | `src/webview/utils/linkClick.ts`, `selectTableCellAtTarget` in `src/webview/BubbleMenuView.ts` |
 | Hidden-view state           | `src/webview/utils/richViewState.ts`                                                             |
+| Copy Reference for AI       | `src/editor/aiReference.ts`, `src/webview/features/aiReferenceSelection.ts`, `src/shared/aiReferenceProtocol.ts` |
 | Feedback request contract   | `src/shared/feedbackProtocol.ts`                                                                 |
 | Snapshot protocol/service   | `src/shared/feedbackSnapshotProtocol.ts`, `src/editor/feedbackSnapshotService.ts`                |
 | Delivery protocol/transport | `src/shared/feedbackDeliveryProtocol.ts`, `src/editor/feedbackTransport.ts`                      |
