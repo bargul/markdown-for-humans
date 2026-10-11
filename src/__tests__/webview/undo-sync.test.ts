@@ -138,6 +138,7 @@ type TestingModule = {
   insertRawCodeTextForTests: (text: string) => void;
   queueDebouncedUpdateForTests: (markdown: string) => void;
   immediateUpdateForTests: () => void;
+  setSourceLossGuardForTests: (guard: { isLocked(): boolean } | null) => void;
   flushRichViewBeforeTeardownForTests: () => void;
   getDocumentSyncIdentityForTests: () => {
     viewGeneration: string;
@@ -1284,6 +1285,21 @@ describe('webview undo/redo guards', () => {
       expect(mockEditor.commands.setContent).not.toHaveBeenCalled();
       jest.advanceTimersByTime(500);
       expect(postedOfType('edit')).toEqual([expect.objectContaining({ content: 'hello  world' })]);
+    });
+
+    it('Ctrl+S on a read-only document saves the file without sending this view as an edit', () => {
+      useWindowFakeTimers();
+      testing.setMockEditor(createReplayEditor(() => '# Title\n\nTail paragraph.'));
+      testing.setSourceLossGuardForTests({ isLocked: () => true });
+
+      try {
+        testing.immediateUpdateForTests();
+      } finally {
+        testing.setSourceLossGuardForTests(null);
+      }
+
+      expect(postedOfType('edit')).toEqual([]);
+      expect(postedOfType('save')).toHaveLength(1);
     });
 
     it('Y1: still applies the host-tagged Ctrl+S save-policy echo over recent typing', () => {

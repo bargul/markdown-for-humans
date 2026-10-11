@@ -110,6 +110,29 @@ describe('source loss guard', () => {
       expect(harness.editor.state.doc.firstChild?.textContent).toBe('TitleZZ');
     });
 
+    it('reports the lock, so a save from this view can be kept from rewriting the file', () => {
+      harness = createHarness();
+      harness.load(WITH_VIDEO);
+      expect(harness.guard.isLocked()).toBe(true);
+
+      harness.button('Edit anyway').click();
+      expect(harness.guard.isLocked()).toBe(false);
+    });
+
+    it('reports the lock even when the idle scan has not run', () => {
+      harness = createHarness(() => {});
+      harness.load(WITH_VIDEO);
+
+      expect(harness.guard.isLocked()).toBe(true);
+    });
+
+    it('reports no lock for a document it can keep', () => {
+      harness = createHarness();
+      harness.load('# Clean\n\nNothing special.');
+
+      expect(harness.guard.isLocked()).toBe(false);
+    });
+
     it('opens the source view and stays read-only', () => {
       harness = createHarness();
       harness.load(WITH_VIDEO);
@@ -173,6 +196,29 @@ describe('source loss guard', () => {
       harness = createHarness();
       harness.load(WITH_MARK);
       harness.typeIn(1);
+      harness.button('Undo').click();
+
+      expect(harness.banner()).toBeNull();
+      expect(getEditorMarkdownForSync(harness.editor)).toBe(WITH_MARK);
+    });
+
+    it('keeps the notice when Undo steps back an edit in another block', () => {
+      harness = createHarness();
+      harness.load(WITH_MARK);
+      harness.typeIn(1);
+      harness.typeIn(2);
+      harness.button('Undo').click();
+
+      expect(getEditorMarkdownForSync(harness.editor)).not.toContain('<mark>');
+      expect(harness.banner()?.textContent).toContain('<mark>');
+    });
+
+    it('removes the notice once Undo has restored the block', () => {
+      harness = createHarness();
+      harness.load(WITH_MARK);
+      harness.typeIn(1);
+      harness.typeIn(2);
+      harness.button('Undo').click();
       harness.button('Undo').click();
 
       expect(harness.banner()).toBeNull();

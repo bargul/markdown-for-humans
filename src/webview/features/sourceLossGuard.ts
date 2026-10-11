@@ -42,6 +42,11 @@ export interface SourceLossGuard {
   beforeLoad(): void;
   /** Call right after it did, with that Markdown. */
   documentLoaded(source: string): void;
+  /**
+   * The file has content no block holds and the user has not chosen to edit
+   * anyway. Writing this view's Markdown now, even unedited, removes it.
+   */
+  isLocked(): boolean;
   destroy(): void;
 }
 
@@ -159,7 +164,9 @@ export function createSourceLossGuard(options: SourceLossGuardOptions): SourceLo
     label: l10n.t('Undo'),
     run: (): void => {
       editor.commands.undo();
-      hideBanner();
+      // One step back may have undone a different edit. Keep the notice until
+      // every tracked block saves its authored source again.
+      if (!tracked.some(block => block.edited)) hideBanner();
     },
   };
 
@@ -293,6 +300,11 @@ export function createSourceLossGuard(options: SourceLossGuardOptions): SourceLo
       schedule(() => {
         if (generation === scanGeneration && scanPending && !editor.isDestroyed) scan();
       });
+    },
+    isLocked() {
+      // A save can come before idle time does.
+      if (scanPending && !loading) scan();
+      return locked;
     },
     destroy() {
       scanGeneration += 1;
