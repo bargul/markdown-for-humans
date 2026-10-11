@@ -4,10 +4,10 @@
 
 - **Task name:** Copy Reference for AI (file and exact source lines)
 - **Slug:** copy-ai-reference
-- **Status:** in-progress
+- **Status:** shipped
 - **Created:** 2026-10-11
 - **Last updated:** 2026-10-11 (merged main after 0.4.4)
-- **Shipped:** _(pending)_
+- **Shipped:** 2026-10-12 (0.4.4)
 
 ---
 
