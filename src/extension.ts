@@ -154,6 +154,23 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Paste as plain text. VS Code cancels Ctrl/Cmd+Shift+V inside a webview and
+  // forwards the key to the workbench, so no paste event reaches the editor:
+  // the chord is a keybinding on this command, which reads the clipboard here.
+  context.subscriptions.push(
+    vscode.commands.registerCommand('markdownForHumans.pastePlainText', async () => {
+      const panel = getActiveWebviewPanel();
+      if (!panel) return;
+      try {
+        const text = await vscode.env.clipboard.readText();
+        if (text) await panel.webview.postMessage({ type: 'pastePlainText', text });
+      } catch (error) {
+        console.error('[MD4H] Paste as plain text failed:', error);
+        vscode.window.showErrorMessage('Markdown Editor for Humans: could not read the clipboard.');
+      }
+    })
+  );
+
   // Feedback commands are intentionally unbound. They remain discoverable in
   // the Command Palette and can be assigned personal keybindings without the
   // extension claiming chords owned by VS Code or other extensions.

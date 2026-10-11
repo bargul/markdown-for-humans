@@ -208,6 +208,10 @@
         "title": "Markdown Editor for Humans: Toggle Formatting Shortcuts (Cmd/Ctrl+B/I/U)"
       },
       {
+        "command": "markdownForHumans.pastePlainText",
+        "title": "Markdown Editor for Humans: Paste as Plain Text"
+      },
+      {
         "command": "markdownForHumans.feedback.start",
         "title": "Markdown Editor for Humans: Start Feedback"
       },
@@ -258,6 +262,12 @@
         "key": "ctrl+alt+b",
         "mac": "cmd+alt+b",
         "when": "activeCustomEditorId == 'markdownForHumans.editor'"
+      },
+      {
+        "command": "markdownForHumans.pastePlainText",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "activeCustomEditorId == 'markdownForHumans.editor' && !terminalFocus && !inputFocus"
       }
     ],
     "views": {
