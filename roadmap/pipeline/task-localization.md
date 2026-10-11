@@ -4,7 +4,7 @@
 
 - **Task name:** Localization (translation) support
 - **Slug:** localization
-- **Status:** in-progress (branch `claude/l10n-scoping-d621b8`)
+- **Status:** in-progress (branch `claude/l10n-scoping-d621b8`; five languages shipped in the branch, pull request pending)
 - **Created:** 2026-10-11
 - **Last updated:** 2026-10-11
 - **Shipped:** _(pending)_
@@ -462,6 +462,15 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
   - Visual quality in light and dark themes.
 
 ---
+
+### 2026-10-11 - Owner decision: ship all five; main merged; narrow toolbar fixed
+
+- **Decision (owner):** ship Simplified Chinese, Japanese, Spanish, Brazilian Portuguese and Russian now, marked as AI translated and open to community review. Issue replies on #55 and #77 go out after the merge.
+- **Shipped files:** the five bundles moved from `l10n/drafts/` to `l10n/`, and the five `package.nls.<locale>.json` files to the repo root (`git mv`). `l10n/drafts/` is empty and stays the place for a language in progress.
+- **Main merged:** font and readability settings (PR 154) and the new "Feedback is not ready" wording. Six setting descriptions became `%key%` entries, the two warnings in `src/feedbackCommandReadiness.ts` use `vscode.l10n.t`, and the hardcoded-text baseline is now empty. All eight strings are translated in the five languages; typography terms were checked against VS Code's own language packs.
+- **Feedback toolbar in a narrow editor:** real screenshots showed the button labels running into each other below about 620 px of editor width in English and below about 735 px in Russian. The buttons no longer shrink; `fitFeedbackToolbarLabels` switches the toolbar to icons when the labels do not fit, whatever the language, and each button keeps its name as tooltip and accessible name. The fixed 520 px rule stays as a fallback.
+- **Docs:** README has a Languages section, CHANGELOG lists the languages and the fixes, `l10n/README.md` shows the five as shipped without native review.
+- **Marketplace short description and keywords:** unchanged; options are with the owner.
 
 ## 8. Decisions & Tradeoffs
 
