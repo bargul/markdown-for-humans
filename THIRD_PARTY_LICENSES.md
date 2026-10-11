@@ -42,7 +42,7 @@ This document lists the third-party open source software components used in Mark
 
 ### highlightjs-sap-abap
 - **License:** MIT
-- **Copyright:** © 2024 Lars Hvam Petersen, Cassio Binkowski
+- **Copyright:** © 2019 highlight.js
 - **Repository:** https://github.com/highlightjs/highlightjs-sap-abap
 - **License URL:** https://github.com/highlightjs/highlightjs-sap-abap/blob/main/LICENSE
 
