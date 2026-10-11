@@ -169,7 +169,7 @@ host: pastePlainText {text, mode}  ->  webview inserts in that mode
   - [x] `pastePlainText.extHost.test.cjs` (3): command registered; clipboard text reaches the document; text with Markdown syntax raises the choice and pastes as code
 - [x] **Implementation**
 - [x] **Docs** - `CHANGELOG.md`, `README.md`, `KNOWN_ISSUES.md`
-- [ ] **Manual check at a real keyboard** (section 7)
+- [x] **Manual check at a real keyboard** on macOS (section 7). Windows still open.
 
 ---
 
@@ -204,6 +204,12 @@ host: pastePlainText {text, mode}  ->  webview inserts in that mode
 **Added to the manual checklist:**
 11. Copy `**bold** text`, press Cmd/Ctrl+Shift+V: a quick pick offers code, Markdown and plain text. Try each; Escape pastes nothing.
 12. Copy `a * b * c` or a class name: no quick pick.
+
+### 2026-10-11 – Manual keyboard check (macOS)
+
+- **Who:** the owner, by hand, in the VS Code 1.141.0 test build running this branch (`2de293f`), other extensions disabled, with a page of copy sources and a target document.
+- **Result:** reported all checks working: Cmd+Shift+V pastes plain text, the quick pick appears for text with Markdown syntax and not for lookalikes, a class name copied from a code editor pastes inline, undo, search box, Command Palette.
+- **Still open:** Windows and Linux (Ctrl+Shift+V, and the terminal check), and a pass in a normal profile with other extensions enabled.
 
 ---
 
