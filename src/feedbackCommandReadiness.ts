@@ -82,7 +82,7 @@ export async function sendFeedbackCommand(
     }
     if (!ready || !target.ready) {
       void vscode.window.showWarningMessage(
-        'Feedback is not ready. Wait for the editor to load and try again.'
+        'Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.'
       );
       return false;
     }

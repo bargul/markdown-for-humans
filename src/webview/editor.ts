@@ -73,6 +73,7 @@ import { describeUncaughtError } from './utils/describeUncaughtError';
 import * as l10n from './l10n';
 import { escapeHtmlText } from '../shared/l10n';
 import { applyLocalizedCssText } from './utils/localizedCssText';
+import { applyTypographySettings } from './utils/typographyStyles';
 import {
   createFeedbackNodeViewInteractionGuards,
   createFeedbackReviewController,
@@ -2824,6 +2825,8 @@ window.addEventListener('openExtensionSettings', () => {
 // We use a CSS calc() expression so the override stays live — if the user later changes
 // their VS Code editor font size, --md-base-size-override recomputes automatically
 // instead of being locked to the pixel value captured at call time.
+// --md-editor-font-size is set only by the markdownForHumans.font.useEditorFont opt-in,
+// so zoom scales the same base size the stylesheet uses.
 function applyZoomLevel(percent: number) {
   const clamped = Math.max(50, Math.min(200, percent));
   if (clamped === 100) {
@@ -2831,7 +2834,7 @@ function applyZoomLevel(percent: number) {
   } else {
     document.documentElement.style.setProperty(
       '--md-base-size-override',
-      `calc(var(--vscode-editor-font-size, 14px) * ${clamped / 100})`
+      `calc(var(--md-editor-font-size, var(--vscode-editor-font-size, 14px)) * ${clamped / 100})`
     );
   }
 }
@@ -2874,8 +2877,10 @@ function shouldSuppressFormattingShortcut(
 }
 
 /**
- * Applies paragraph spacing and zoom settings from an incoming message.
- * Called from both the `update` and `settingsUpdate` handlers.
+ * Applies paragraph spacing, zoom and reader typography settings from an
+ * incoming message. Called from both the `update` and `settingsUpdate`
+ * handlers, so a configuration change applies without reopening the file.
+ * A message without a field leaves that setting as it is.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyEditorSettings(message: Record<string, any>) {
@@ -2893,6 +2898,9 @@ function applyEditorSettings(message: Record<string, any>) {
   }
   if (typeof message.zoom === 'number') {
     applyZoomLevel(message.zoom);
+  }
+  if (message.typography !== undefined) {
+    applyTypographySettings(document.documentElement, message.typography);
   }
   if (typeof message.formattingShortcutsEnabled === 'boolean') {
     formattingShortcutsEnabled = message.formattingShortcutsEnabled;

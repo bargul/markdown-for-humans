@@ -377,6 +377,51 @@
           "description": "%configuration.zoom.description%",
           "scope": "application"
         },
+        "markdownForHumans.font.family": {
+          "type": "string",
+          "default": "",
+          "maxLength": 1024,
+          "markdownDescription": "Font for body text and headings. Use any font installed on your computer; separate several with commas and the first one found is used. Leave empty for the standard font. Example: `Atkinson Hyperlegible, sans-serif`\n\nCode stays monospace, and math and diagrams keep their own fonts. If a font is not installed, the standard font is used. PDF and Word exports keep their own fonts.",
+          "scope": "application"
+        },
+        "markdownForHumans.font.weight": {
+          "type": "number",
+          "default": 400,
+          "minimum": 100,
+          "maximum": 900,
+          "markdownDescription": "Weight of body text, from 100 (thin) to 900 (heavy). 400 is normal. Example: `500` for slightly heavier text.\n\nYour font must include the weight you choose. Headings and bold text keep their own weight.",
+          "scope": "application"
+        },
+        "markdownForHumans.font.lineHeight": {
+          "type": "number",
+          "default": 1.58,
+          "minimum": 1,
+          "maximum": 3,
+          "markdownDescription": "Line height of body text, as a multiple of the font size. Example: `1.8` for more room between lines.\n\nApplies to paragraphs, lists, tables, quotes and alerts. Headings and code keep their own line height.",
+          "scope": "application"
+        },
+        "markdownForHumans.font.letterSpacing": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 0.5,
+          "markdownDescription": "Extra space between letters, as a fraction of the font size. 0 keeps the standard spacing. Example: `0.05` for slightly wider letters.\n\nApplies to body text and headings. Code and math are not changed.",
+          "scope": "application"
+        },
+        "markdownForHumans.font.wordSpacing": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Extra space between words, as a fraction of the font size. 0 keeps the standard spacing. Example: `0.16` to set words further apart, which helps when letter spacing is raised.\n\nApplies to body text and headings. Code and math are not changed.",
+          "scope": "application"
+        },
+        "markdownForHumans.font.useEditorFont": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Use your VS Code editor font for body text: `editor.fontFamily`, `editor.fontWeight` and `editor.fontSize`, including values set under `\"[markdown]\"` in settings.json. The VS Code default editor font is monospace, so turn this on only if you have set an editor font you like to read in.\n\n`#markdownForHumans.font.family#` and `#markdownForHumans.font.weight#` take priority when you change them.",
+          "scope": "application"
+        },
         "markdownForHumans.enableMath": {
           "type": "boolean",
           "default": true,

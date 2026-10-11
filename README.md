@@ -98,6 +98,7 @@ The document is locked while you review, so your comments always point at the so
 - **Export** to PDF or Word for people outside your repo. PDF export uses Chrome or Chromium on your machine; Word export has limits listed in [Known Issues](./KNOWN_ISSUES.md)
 - **Word count and reading time** in the status bar
 - **Theme aware:** follows your VS Code theme, fonts and font size
+- **Readable your way:** for accessibility, set the body font, weight, line height, letter spacing and word spacing you read best with
 
 ---
 
@@ -132,6 +133,8 @@ Click the gear in the editor toolbar, or open Settings (`Ctrl+,` / `Cmd+,`) and 
 | `markdownForHumans.imageResize.skipWarning` | `false` | Resize images without the confirmation dialog |
 | `markdownForHumans.feedback.handoffPromptTemplate` | built-in prompt | Custom wording for the prompt copied by **Finish & copy**. Must include `{{feedbackFile}}`; see [Feedback Sessions](docs/FEEDBACK.md) |
 | `markdownForHumans.chromePath` | `""` | Chrome or Chromium used for PDF export; empty means auto-detect |
+| `markdownForHumans.font.family` | `""` | Font for body text and headings: any font installed on your computer, for example `Atkinson Hyperlegible`. Code stays monospace; exports keep their own fonts |
+| `markdownForHumans.font.weight`, `.lineHeight`, `.letterSpacing`, `.wordSpacing` | `400`, `1.58`, `0`, `0` | Weight and spacing of body text. `font.useEditorFont` uses your VS Code editor font instead, including `"[markdown]"` overrides |
 
 Requires VS Code 1.98.0 or newer in a trusted, disk-backed workspace. Compatible VS Code derivatives must provide the same desktop extension-host and webview APIs.
 

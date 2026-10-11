@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Font and readability settings.** Choose the font you read best in, for example a font designed for dyslexia or low vision. `markdownForHumans.font.family` takes any font installed on your computer, and `font.weight`, `font.lineHeight`, `font.letterSpacing` and `font.wordSpacing` adjust body text. Changes apply at once to every open editor. Code stays monospace, and math and diagrams keep their own fonts. `markdownForHumans.font.useEditorFont` uses your VS Code editor font instead, including `"[markdown]"` overrides of `editor.fontFamily`, `editor.fontWeight` and `editor.fontSize`. Nothing changes until you set one of these, and PDF and Word exports keep their own fonts.
+
+### Fixed
+
+- The "Feedback is not ready" warning says to reopen the editor if it stays blank. It only said to wait for the editor to load, which does not help when the editor never finished starting.
+
 ---
 
 ## [0.4.4] - 2026-10-11
