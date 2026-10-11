@@ -39,6 +39,7 @@ import {
 } from '../shared/imageSource';
 import { findImageSourceReferences } from './imageSourceReferences';
 import { applyBlankLinePolicy, type BlankLineMode } from '../shared/blankLinePolicy';
+import { resolveTypographySettings, type TypographySettings } from '../shared/typographySettings';
 import {
   FeedbackReportLockBusyError,
   FeedbackSessionError,
@@ -446,6 +447,11 @@ const FEEDBACK_HOST_ERROR_CODES = new Set<string>([
 // 250 ms best-effort autosave bridge deadline for a fail-closed user action.
 const FEEDBACK_FLUSH_ACK_TIMEOUT_MS = 2_000;
 
+// `"[markdown]"` overrides of `editor.*` never reach webview CSS variables (VS Code
+// builds those from the global editor configuration), so the host reads them here.
+const MARKDOWN_LANGUAGE_SCOPE: vscode.ConfigurationScope = { languageId: 'markdown' };
+const MARKDOWN_EDITOR_FONT_KEYS = ['fontFamily', 'fontWeight', 'fontSize'] as const;
+
 function isFeedbackHostErrorCode(value: unknown): value is FeedbackHostErrorCode {
   return typeof value === 'string' && FEEDBACK_HOST_ERROR_CODES.has(value);
 }
@@ -595,6 +601,34 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     const config = vscode.workspace.getConfiguration();
     const value = config.get<string>('markdownForHumans.blankLines.mode', 'strip');
     return value === 'preserve' ? 'preserve' : 'strip';
+  }
+
+  /**
+   * Reads the reader typography settings (`markdownForHumans.font.*`) and
+   * resolves them for the webview. Every field is `null` at the defaults, so
+   * an untouched installation changes nothing.
+   *
+   * With `markdownForHumans.font.useEditorFont` on, body text also takes
+   * `editor.fontFamily`, `editor.fontWeight` and `editor.fontSize`, including
+   * values set inside a `"[markdown]"` block.
+   */
+  private getTypographySettings(): TypographySettings {
+    const config = vscode.workspace.getConfiguration();
+    const editorConfig = config.get<boolean>('markdownForHumans.font.useEditorFont', false)
+      ? vscode.workspace.getConfiguration('editor', MARKDOWN_LANGUAGE_SCOPE)
+      : undefined;
+    return resolveTypographySettings({
+      family: config.get('markdownForHumans.font.family'),
+      weight: config.get('markdownForHumans.font.weight'),
+      lineHeight: config.get('markdownForHumans.font.lineHeight'),
+      letterSpacing: config.get('markdownForHumans.font.letterSpacing'),
+      wordSpacing: config.get('markdownForHumans.font.wordSpacing'),
+      editorFont: editorConfig && {
+        family: editorConfig.get('fontFamily'),
+        weight: editorConfig.get('fontWeight'),
+        size: editorConfig.get('fontSize'),
+      },
+    });
   }
 
   private async syncMarkdownlintMd012(mode: BlankLineMode): Promise<void> {
@@ -1155,6 +1189,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         e.affectsConfiguration('markdownForHumans.paragraph.spacingBefore') ||
         e.affectsConfiguration('markdownForHumans.paragraph.spacingAfter') ||
         e.affectsConfiguration('markdownForHumans.zoom') ||
+        e.affectsConfiguration('markdownForHumans.font') ||
+        MARKDOWN_EDITOR_FONT_KEYS.some(key =>
+          e.affectsConfiguration(`editor.${key}`, MARKDOWN_LANGUAGE_SCOPE)
+        ) ||
         e.affectsConfiguration('markdownForHumans.enableMath') ||
         e.affectsConfiguration('markdownForHumans.formattingShortcuts.enabled')
       ) {
@@ -1207,6 +1245,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           paragraphSpacingBefore: paragraphSpacingBefore,
           paragraphSpacingAfter: paragraphSpacingAfter,
           zoom: zoom,
+          typography: this.getTypographySettings(),
           formattingShortcutsEnabled,
           blankLineMode,
           enableMath: enableMath,
@@ -1387,6 +1426,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       paragraphSpacingBefore: paragraphSpacingBefore,
       paragraphSpacingAfter: paragraphSpacingAfter,
       zoom: zoom,
+      typography: this.getTypographySettings(),
       formattingShortcutsEnabled,
       blankLineMode,
       enableMath: enableMath,
@@ -1923,6 +1963,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           paragraphSpacingBefore: paragraphSpacingBefore,
           paragraphSpacingAfter: paragraphSpacingAfter,
           zoom: zoom,
+          typography: this.getTypographySettings(),
           formattingShortcutsEnabled,
           blankLineMode,
           enableMath: enableMath,
