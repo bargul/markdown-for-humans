@@ -1793,6 +1793,14 @@ function getExportStyles(theme: string): string {
  * Convert HTML to docx elements using Cheerio for reliable parsing
  * Handles headings, paragraphs, lists, tables, and images with nested tags
  * Exported for tests; production callers go through exportDocument.
+ *
+ * @param html - Rendered document HTML from the editor
+ * @param docx - The loaded `docx` module, passed in so it can be imported lazily
+ * @param theme - Export theme name; sets the text color of blockquotes
+ * @param document - Source document, passed on to paragraph parsing
+ * @returns The docx block elements, in document order
+ * @throws If Cheerio cannot be loaded or an element cannot be converted; the
+ *   caller reports the failure to the user
  */
 export async function htmlToDocx(
   html: string,
