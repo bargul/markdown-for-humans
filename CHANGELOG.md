@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- **Copy Reference for AI is back, and exact.** The **@** toolbar button and the command **Markdown Editor for Humans: Copy Reference for AI** copy a reference such as `@bom/README.md#L10-14` for the caret or selection, ready to paste into Claude Code, Copilot or any agent ([#140](https://github.com/concretios/markdown-for-humans/issues/140), [#61](https://github.com/concretios/markdown-for-humans/issues/61)). Line numbers are read from the saved file: a caret in a table cell gives that row's line, a caret in a code block gives that code line, and nested list items, quotes, alerts, frontmatter and hard-wrapped paragraphs resolve to their own line. Where a position cannot be verified, the reference covers the smallest enclosing block instead of guessing. Unsaved changes are saved first so the lines match what the agent reads. The command has no default shortcut; the README shows how to bind one.
 - **ABAP syntax highlighting for code blocks.** ` ```abap ` fences are highlighted (keywords, strings, comments), and ABAP is available in the code block language menu. `sap-abap` works as a fence alias. The grammar comes from the community `highlightjs-sap-abap` package, since highlight.js itself ships no ABAP grammar.
 
 ### Fixed

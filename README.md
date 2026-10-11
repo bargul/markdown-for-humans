@@ -56,6 +56,8 @@ Plans, specs and `CLAUDE.md` files are easier to review rendered. Start a review
 
 The document is locked while you review, so your comments always point at the source the agent will read. [How the feedback file works →](docs/FEEDBACK.md)
 
+**Just need to point at a spot?** Put the caret on a line or select a range, then click **@** in the toolbar or run **Markdown Editor for Humans: Copy Reference for AI**. A reference such as `@bom/README.md#L10-14` is on your clipboard, with the exact lines of the saved file: the row inside a table, the line inside a code block, the item inside a nested list.
+
 **The view keeps up while your agent works.** When a terminal, an agent, or Git changes the file on disk, the rendered view updates in place.
 
 ![A terminal appends to the file and the rendered view updates live](https://raw.githubusercontent.com/concretios/markdown-for-humans/77fe1f0d8a388da2dd20ede7efb6065dc2e1f96a/marketplace-assets/gifs/v2/live-refresh.gif)
@@ -117,6 +119,17 @@ Hold **Shift** while you drop: VS Code requires it for drops into an editor. In 
 
 **How do I see the raw Markdown?**
 Click the **Source** button in the toolbar to open the source beside the rendered view.
+
+**How do I give my AI agent a line reference?**
+Click **@** in the toolbar, or run **Copy Reference for AI** from the Command Palette. It copies `@path#L10-14` for the caret or selection. If the file has unsaved changes it is saved first, so the lines match what the agent reads. No shortcut is assigned; to add one, open **Preferences: Open Keyboard Shortcuts (JSON)** and add:
+
+```json
+{
+  "key": "alt+k",
+  "command": "markdownForHumans.copyReferenceForAi",
+  "when": "activeCustomEditorId == 'markdownForHumans.editor'"
+}
+```
 
 ---
 

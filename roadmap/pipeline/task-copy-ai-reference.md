@@ -140,17 +140,17 @@ webview: toast
 ## 6. Work Breakdown
 
 - [x] **Phase 1: Research** - issues 140 and 61, retired code, Feedback mapping, toolbar, external formats
-- [ ] **Phase 2: Mapping** - failing tests, then `aiReference.ts` and `aiReferenceSelection.ts`
-- [ ] **Phase 3: Wiring** - failing tests, then command, provider handler, webview trigger and toast
-- [ ] **Phase 4: Toolbar button** - separate commit so it can be dropped on its own
-- [ ] **Phase 5: Docs** - CHANGELOG, README, docs
+- [x] **Phase 2: Mapping** - failing tests, then `aiReference.ts` and `aiReferenceSelection.ts`
+- [x] **Phase 3: Wiring** - failing tests, then command, provider handler, webview trigger and toast
+- [x] **Phase 4: Toolbar button** - separate commit so it can be dropped on its own
+- [x] **Phase 5: Docs** - CHANGELOG, README, QA manual, key files table
 - [ ] **Testing**
-  - [ ] Jest: resolver per block type, multi-block, CRLF, frontmatter, 10,000 lines
-  - [ ] Jest: formatting (Windows paths, spaces, outside workspace)
-  - [ ] Jest: real editor end to end (selection to lines)
-  - [ ] Jest: `package.json` and `extension.ts` wiring
-  - [ ] Extension Development Host: command registered and reachable
-  - [ ] Real VS Code window pass
+  - [x] Jest: resolver per block type, multi-block, CRLF, frontmatter, 10,000 lines
+  - [x] Jest: formatting (Windows paths, spaces, outside workspace)
+  - [x] Jest: real editor end to end (selection to lines), plus this repository's own documents
+  - [x] Jest: `package.json` and `extension.ts` wiring, host handler, toolbar button
+  - [x] Extension Development Host: command to clipboard, including the save-first rule
+  - [ ] Real VS Code window pass by hand (toolbar click, toast, mouse selection, a user keybinding)
 
 ---
 
@@ -160,6 +160,18 @@ webview: toast
 
 - **What:** Read both issues, PR 90, the archived implementation and its three commits, the Feedback anchor and snapshot code, and the toolbar. Confirmed markdown-it line maps for table rows, list items, quote paragraphs and fences.
 - **Notes:** The archived code emitted `#10-14` with no `L`. Issue 140 writes `#L10-14`. Claude Code's current docs show `@app.ts#5-10`; its older docs showed `@File#L1-99`. See Decisions.
+
+### 2026-10-11 - Built and verified
+
+- **What:** Resolver, selection describer, protocol, command, host handler, toolbar button, toast, docs.
+- **Files:** `src/editor/aiReference.ts`, `src/webview/features/aiReferenceSelection.ts`, `src/shared/aiReferenceProtocol.ts`, `src/editor/MarkdownEditorProvider.ts`, `src/extension.ts`, `src/webview/editor.ts`, `src/webview/BubbleMenuView.ts`, `package.json`, tests under `src/__tests__/` and `test/integration/`.
+- **Results:** `npm run lint` clean. `npx jest`: 218 suites and 4,490 tests passed, none failed. `npm run test:integration` on VS Code 1.141.0: 10 passed.
+- **Accuracy audit:** carets placed inside 4,994 words across 12 of this repository's Markdown files. 4,989 resolved to the exact line, 5 to no line (a malformed fence inside a nested list), 0 to a wrong line. Four of those files are kept as a permanent test.
+- **Found while testing:**
+  - Link reference definitions (`[0.4.3]: https://...`) are a marker block in the editor but no block for markdown-it, so the anchor map rejected the whole document (this repository's CHANGELOG got no line numbers). The resolver now leaves such blocks out of the anchor map and resolves them by exact text match against the lines between their neighbors. Feedback itself still has this limit; see Follow-up.
+  - After a document loads, the caret is at the end of the document, not the start. The host test places it with `markdownForHumans.navigateToHeading`.
+  - A run of blank lines does not load as one empty paragraph per extra line (three blank lines load as one), so a caret on such a paragraph resolves to the blank gap's range unless the file has the editor's own layout.
+- **Not verified in a real window:** toolbar click, toast appearance, mouse selections, and a user keybinding firing while the rich view has focus. Background control could not address a second VS Code process while another VS Code window was open, and taking over the screen was not appropriate with other sessions active.
 
 ---
 
@@ -178,6 +190,8 @@ webview: toast
 
 ## 9. Follow-up & Future Work
 
-- Partial anchoring: when the document as a whole cannot be matched, blocks before the first mismatch could still be anchored.
+- Feedback cannot start on a document with link reference definitions, for the cause described in the log. The same idea (leave renderless marker blocks out of the anchor map) would fix it in `feedbackAnchors.ts`, with care for code that pairs descriptors and anchors by index.
+- Partial anchoring: when the document as a whole cannot be matched (a list mixing plain and task items, a three-space ordered-list root), blocks before the first mismatch could still be anchored.
+- Blank-line runs are not preserved one to one on load in the test harness (four blank lines load as one empty paragraph). Worth checking in the product.
 - A status bar "Ln" readout for the caret (issue 61).
 - A right-click entry through `webview/context`.
