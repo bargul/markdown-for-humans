@@ -209,7 +209,8 @@ host: pastePlainText {text, mode}  ->  webview inserts in that mode
 
 - **Who:** the owner, by hand, in the VS Code 1.141.0 test build running this branch (`2de293f`), other extensions disabled, with a page of copy sources and a target document.
 - **Result:** reported all checks working: Cmd+Shift+V pastes plain text, the quick pick appears for text with Markdown syntax and not for lookalikes, a class name copied from a code editor pastes inline, undo, search box, Command Palette.
-- **Still open:** Windows and Linux (Ctrl+Shift+V, and the terminal check), and a pass in a normal profile with other extensions enabled.
+- **Windows and Linux:** not tested by hand and will not be before release (owner decision, 2026-10-11: no such machine is available; macOS testing is the bar). CI runs the Extension Host suite on Windows and Ubuntu, which covers the command, the clipboard read, the quick pick route and the insertion there. Only the Ctrl+Shift+V keystroke and the terminal check stay unverified on those systems; the keybinding rests on VS Code's source (section 5).
+- **Still open:** a pass in a normal profile with other extensions enabled.
 
 ---
 
