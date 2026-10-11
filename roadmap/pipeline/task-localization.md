@@ -415,6 +415,52 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
 - **Issue #77:** Bold, Italic and Strikethrough keep their icon-font glyph unless a language supplies another letter (`B/Bold button letter` and so on); then the letter renders as text. `H1` to `H3` are translatable text.
 - **Order of work:** files that neither `main` nor the open feature branches touch first; `package.json` and `src/feedbackCommandReadiness.ts` after the next sync with `main`.
 
+### 2026-10-11 - Conversion done, five languages drafted and reviewed
+
+- **Conversion (commit `2d4d0ae` and follow-ups):** toolbar, dialogs and overlays, image dialogs, audit, Feedback review and capture, provider notifications, export, outline, word count. 778 messages in `l10n/bundle.l10n.json`. The hardcoded-text ratchet went from 529 to 2; the two left are in `src/feedbackCommandReadiness.ts`, which changed on `main`.
+- **How:** six parallel agents on disjoint file sets, each with the rules in `vibe-coding-rules/localization.md`; every result reviewed and the full suite run before commit (4,632 tests pass).
+- **Settled the open question from section 5.4, item 10:** no webview label reaches the stored Feedback bundle. The report builds its own English labels. A real-editor test pseudo-translates every message and asserts that nothing translated is posted to the host.
+- **Found and fixed on the way:**
+  - `l10n.t` threw without a `document` (highlighting worker). It now returns English there.
+  - `npm run l10n:extract` never exited (in-process `jest.run()`). It now runs Jest as a child process.
+  - Six English messages contained an em dash; reworded before translation, since the English text is the key.
+  - The audit title said "1 issues" and the status bar "1 words". Both have singular forms now.
+  - The two placeholder texts drawn by CSS (`Start writing...`, `Drop image here`) read their text from custom properties.
+  - A language's own letter for Bold, Italic or Strikethrough is drawn in that style.
+- **Translations:** one translator agent and one independent reviewer agent per language, both checking against VS Code's own language pack terms. Entries changed by the reviewer: zh-cn 56, ja 49, es 83, pt-br 42, ru 53, of 773. All five reviewers rated their file "fit to show users, with caveats". They remain machine translations and sit in `l10n/drafts/`.
+- **Decisions the reviewers made that a native reader should confirm:**
+  - zh-cn: agent is 智能体; GitHub alert is 提示块; comments are 评论.
+  - ja: Audit is チェック; sealed is 確定 beside ロック for locked.
+  - es: the Feedback feature is "revisión", an item is "comentario"; strikethrough letter is T.
+  - pt-br: locked is "lacrado"; handoff is "prompt para o agente"; strikethrough letter is T.
+  - ru: Feedback is «замечания»; lock is «зафиксировать», which VS Code's Russian pack uses for a Git commit.
+- **Still open:**
+  - Manifest strings (`package.nls.json`) and the two messages in `src/feedbackCommandReadiness.ts`: both wait for a sync with `main`, which the app blocks until the owner confirms the pinned Git origin.
+  - 73 `FeedbackSessionError` messages in the provider reach users through `showErrorMessage` but are written as thrown errors and stay English.
+  - The word counter splits on whitespace, so Chinese and Japanese documents show a near-zero word count. Existing behaviour; now more visible.
+  - Lists of ids are joined with `', '` in code inside translated sentences.
+
+### 2026-10-11 - Five languages checked in real hosts
+
+- **How:** the same isolated-profile harness as before, with the five draft bundles copied into `l10n/` for the run and removed afterwards. A temporary probe read the live webview DOM. No computer use; nobody looked at the screen. Harness, patch and raw results: `l10n-scoping/real-host-harness/` in the shared session notes.
+
+| Host | Languages run | Display language seen by the extension | Messages loaded | Toolbar labels still English |
+| ---- | ------------- | -------------------------------------- | --------------: | ---------------------------- |
+| VS Code 1.141.0 | en, zh-cn, ja, es, pt-br, ru | matches each | 0 for en, 778 for the rest | 12 of 76, all programming language names |
+| VS Code 1.98.0 | zh-cn, ru | matches each | 778 | same 12 |
+| Cursor 3.24.12 (Code OSS 1.128.0) | zh-cn, ja | matches each | 778 | same 12 |
+
+- **Confirmed in every translated run:**
+  - Host notification, status bar count, search box, search counter and the two CSS-drawn texts are translated.
+  - `<html lang>` carries the display language; in English it stays `en` and no bundle attribute is rendered.
+  - The main toolbar has the same height (61 px) and no horizontal overflow in all five languages at the same width as English. Its buttons are icon-only, so label length does not affect it.
+  - Letter icons: Spanish shows N, K, T; Portuguese N and T with the italic glyph; Russian Ж and К with the strikethrough glyph; Chinese and Japanese keep all three glyphs.
+- **Bundle delivered to the webview:** 38 KB (zh-cn) to 59 KB (es) of HTML attribute per editor open.
+- **Not covered by this run:**
+  - The Feedback toolbar, whose buttons show text. The Russian reviewer expects it to be about a third wider than English.
+  - Dialogs, menus and the Feedback flow were not opened; their text is covered by Jest only.
+  - Visual quality in light and dark themes.
+
 ---
 
 ## 8. Decisions & Tradeoffs
