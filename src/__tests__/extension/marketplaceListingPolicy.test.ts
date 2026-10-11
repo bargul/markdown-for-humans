@@ -86,7 +86,7 @@ describe('marketplace listing policy', () => {
     expect(manifest.description.startsWith('WYSIWYG Markdown editor and viewer')).toBe(true);
     // Search cards show about three lines; ranking listings use 30 to 110 characters.
     expect(manifest.description.length).toBeLessThanOrEqual(120);
-    // The extension also ships to Open VSX editors such as Cursor and Windsurf.
+    // The extension also ships to Open VSX editors such as Cursor and Devin Desktop.
     expect(manifest.description).not.toMatch(/VS Code/);
     expect(manifest.description).not.toContain('—');
   });

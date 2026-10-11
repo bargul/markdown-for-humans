@@ -31,7 +31,7 @@ git push
 vsce login concretio
 vsce publish patch  # Choose: patch, minor, or major
 
-# 6. Publish to Open VSX Registry (for Cursor & Windsurf)
+# 6. Publish to Open VSX Registry (for Cursor & Devin Desktop)
 # First time only: ovsx create-namespace concretio -p <your-token>
 ovsx publish -p <your-token>
 
@@ -115,11 +115,11 @@ git push origin --tags
 - [ ] Build: `npm run package:marketplace`
 - [ ] Upload `.vsix` at https://marketplace.visualstudio.com/manage
 
-### Publish to Open VSX Registry (For Cursor, Windsurf, VSCodium & More)
+### Publish to Open VSX Registry (For Cursor, Devin Desktop, VSCodium & More)
 
 **Why:** Makes extension available in Open VSX-compatible editors:
 - Cursor IDE
-- Windsurf Editor
+- Devin Desktop (formerly Windsurf)
 - VSCodium
 - Gitpod
 - Eclipse Theia
@@ -166,7 +166,7 @@ git push origin --tags
 - [ ] All metadata correct
 - [ ] Test installation from at least one Open VSX-compatible IDE:
   - [ ] Cursor IDE
-  - [ ] Windsurf Editor
+  - [ ] Devin Desktop (formerly Windsurf)
   - [ ] VSCodium
   - [ ] Other (specify): _______
 
@@ -183,7 +183,7 @@ vsce publish patch  # For bug fixes (0.1.0 → 0.1.1)
 # or: vsce publish minor  # For new features (0.1.1 → 0.2.0)
 # or: vsce publish major  # For breaking changes (0.2.0 → 1.0.0)
 
-# Publish to Open VSX (for Cursor, Windsurf, VSCodium & more)
+# Publish to Open VSX (for Cursor, Devin Desktop, VSCodium & more)
 # First time only: ovsx create-namespace concretio -p <your-token>
 ovsx publish -p <your-token>
 

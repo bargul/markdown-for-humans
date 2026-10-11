@@ -173,7 +173,7 @@ The host matrix proves desktop API compatibility and critical custom-editor wiri
 - physical Windows i5/16 GB latency or memory use
 - high-DPI and assistive-technology behavior
 - remote extension-host compatibility
-- every VS Code-derived editor such as Cursor, Windsurf or VSCodium
+- every VS Code-derived editor such as Cursor, Devin Desktop or VSCodium
 - long-form light/dark reading quality
 
 Keep those results separate and manual until a dedicated automated environment exists.
