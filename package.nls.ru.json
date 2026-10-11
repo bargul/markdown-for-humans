@@ -4,6 +4,7 @@
   "command.outline.filter.title": "Структура: Фильтровать заголовки",
   "command.outline.clearFilter.title": "Структура: Очистить фильтр",
   "command.toggleFormattingShortcuts.title": "Markdown Editor for Humans: Включить или отключить сочетания клавиш форматирования (Cmd/Ctrl+B/I/U)",
+  "command.pastePlainText.title": "Markdown Editor for Humans: Вставить как обычный текст",
   "command.feedback.start.title": "Markdown Editor for Humans: Оставить замечания",
   "command.feedback.commentSelection.title": "Markdown Editor for Humans: Добавить замечание к выделенному фрагменту",
   "command.feedback.chooseScope.title": "Markdown Editor for Humans: Выбрать охват замечания",

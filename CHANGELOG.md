@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Paste as plain text.** `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS) pastes the clipboard's text as written: formatting from the source is dropped, nothing is converted from HTML or Markdown, and no code block is created. Line breaks are kept, and one undo removes the paste. The command, **Markdown Editor for Humans: Paste as Plain Text**, is in the Command Palette and can be rebound in Keyboard Shortcuts. If the text contains Markdown syntax that would turn into formatting when the file is reopened, the editor asks first: paste it as code, as Markdown, or as plain text anyway.
+
+### Fixed
+
+- A word or single line copied from a VS Code code editor pastes as text inside the sentence. It was pasted as a code block that split the paragraph.
+
 ---
 
 ## [0.4.4] - 2026-10-11

@@ -4,6 +4,7 @@
   "command.outline.filter.title": "Outline: Filter Headings",
   "command.outline.clearFilter.title": "Outline: Clear Filter",
   "command.toggleFormattingShortcuts.title": "Markdown Editor for Humans: Toggle Formatting Shortcuts (Cmd/Ctrl+B/I/U)",
+  "command.pastePlainText.title": "Markdown Editor for Humans: Paste as Plain Text",
   "command.feedback.start.title": "Markdown Editor for Humans: Start Feedback",
   "command.feedback.commentSelection.title": "Markdown Editor for Humans: Add Feedback to Selection",
   "command.feedback.chooseScope.title": "Markdown Editor for Humans: Choose Feedback Scope",
