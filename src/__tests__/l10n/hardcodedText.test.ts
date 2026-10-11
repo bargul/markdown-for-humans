@@ -25,6 +25,14 @@ if (process.env.L10N_WRITE === '1') {
   );
   writeFileSync(baselinePath, `${JSON.stringify(counts, null, 2)}\n`, 'utf8');
 }
+// L10N_LIST=<output file> writes every finding as `file:line<TAB>text`, to plan a conversion.
+if (process.env.L10N_LIST) {
+  writeFileSync(
+    process.env.L10N_LIST,
+    found.map(entry => `${entry.file}:${entry.line}\t${entry.text}`).join('\n'),
+    'utf8'
+  );
+}
 const baseline = JSON.parse(readFileSync(baselinePath, 'utf8')) as Record<string, number>;
 
 describe('hardcoded UI text finder', () => {

@@ -52,6 +52,12 @@ Mark such text where it sits in a UI sink: `// l10n-ignore: product name`.
 | Shipped locales are complete                                       | A bundle in `l10n/` misses a message                    |
 | Hardcoded UI text ratchet                                          | New English text is written straight into a UI sink     |
 
+To list the hardcoded UI text that is left, with file and line:
+
+```sh
+L10N_LIST=/tmp/hardcoded.txt npx jest src/__tests__/l10n/hardcodedText.test.ts
+```
+
 ## Languages
 
 - `l10n/bundle.l10n.<locale>.json`: shipped. Must translate every message.
