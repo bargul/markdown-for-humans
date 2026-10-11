@@ -3699,9 +3699,27 @@ body.vscode-high-contrast-light.feedback-completion-open {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  /* Start-aligned so a group that is too wide overflows on one side only and
+     fitFeedbackToolbarLabels can measure it. The toolbar centers the group. */
+  justify-content: flex-start;
   max-width: 100%;
   gap: 6px;
+}
+
+/* A squeezed button lets its label run over the next button. Buttons keep their
+   width; fitFeedbackToolbarLabels switches to icons when they do not all fit. */
+.feedback-toolbar-group .feedback-toolbar-button {
+  flex-shrink: 0;
+}
+
+.formatting-toolbar.feedback-toolbar-compact .feedback-toolbar-button {
+  width: 28px;
+  min-width: 28px;
+  padding-inline: 5px;
+}
+
+.formatting-toolbar.feedback-toolbar-compact .feedback-toolbar-button .toolbar-button-label {
+  display: none;
 }
 
 .feedback-more-menu-host {

@@ -14,6 +14,7 @@
 
 import * as l10n from './l10n';
 import { MERMAID_TEMPLATES } from './mermaidTemplates';
+import { fitFeedbackToolbarLabels } from './utils/fitFeedbackToolbarLabels';
 import { showTableInsertDialog } from './features/tableInsert';
 import { showLinkDialog } from './features/linkDialog';
 import { showImageInsertDialog } from './features/imageInsertDialog';
@@ -1066,6 +1067,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         feedbackControlsMounted = false;
       }
       toolbar.classList.remove('feedback-toolbar-active');
+      fitFeedbackToolbarLabels(toolbar);
       const starting = Boolean(state.starting);
       toolbar.setAttribute('aria-busy', String(starting));
       refreshActiveStates();
@@ -1193,6 +1195,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     feedbackGroup.append(...controls.slice(0, 3), moreMenuHost, discardDivider, controls[4]);
     toolbar.replaceChildren(feedbackGroup);
     toolbar.classList.add('feedback-toolbar-active');
+    fitFeedbackToolbarLabels(toolbar);
     feedbackControlsMounted = true;
     if (focusedControl) {
       toolbar
@@ -1206,6 +1209,14 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
   };
 
   feedbackToolbarRenderFunction(feedbackToolbarState);
+
+  // The room for the Feedback labels changes with the editor width (split
+  // editors, side panels), not only when the toolbar is rendered.
+  const feedbackLabelFit =
+    typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(() => fitFeedbackToolbarLabels(toolbar));
+  feedbackLabelFit?.observe(toolbar);
 
   toolbarRefreshFunction = refreshActiveStates;
 
@@ -1264,6 +1275,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     if (feedbackToolbarRenderFunction) {
       feedbackToolbarRenderFunction = null;
     }
+    feedbackLabelFit?.disconnect();
   });
 
   refreshActiveStates();
