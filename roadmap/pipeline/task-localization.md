@@ -598,7 +598,7 @@ Every part of the extension checked against published localization practice. Met
 | B18 | Declare the content language | W3C | Met | `<html lang>` follows the display language once its bundle is loaded |
 | B19 | Accessibility text is translated | B1 | Met | `aria-label`, `title`, `alt`, placeholders and live-region announcements are converted |
 | B20 | Keyboard shortcuts are not assumed | B1 | Met | Key names are arguments or left as printed; no shortcut is changed by language |
-| B21 | User content in any script works | B1 | Gap | The word counter splits on spaces, so Chinese and Japanese text shows a near-zero count and reading time. Existing behaviour |
+| B21 | User content in any script works | B1 | Met | Chinese and Japanese text now counts one per character, the word-processor convention, with English counts unchanged (`task-cjk-word-count.md`). Thai, Lao, Khmer and Burmese still count by whitespace |
 | B22 | Sorting and case follow the locale | B1 | n/a | No user-visible list is sorted alphabetically |
 | B23 | Encoding | B1 | Met | UTF-8 JSON throughout |
 | B24 | Tests do not depend on the machine's locale | B6 | Met | Tests run in English with a fixed fallback; translated runs set the bundle explicitly |
@@ -609,7 +609,7 @@ Every part of the extension checked against published localization practice. Met
 1. **Native review of the five languages** (B25). Both passes were AI. Chinese has a volunteer; the others have none.
 2. **Sync with `main`** (A1): two messages and the newer settings.
 3. **Screen check of the Feedback toolbar, dialogs and menus** in each language (B16).
-4. **Word count for Chinese and Japanese** (B21): needs `Intl.Segmenter`, which also shifts English counts slightly, so it is a product decision.
+4. ~~Word count for Chinese and Japanese (B21)~~ Done on 2026-10-11, without `Intl.Segmenter`; see `task-cjk-word-count.md`.
 5. **Placeholder documentation or named placeholders** (B7) and more translator comments (A8).
 6. **A full pseudo-language pass in a real host** (A11).
 7. **Remote and other forks** (A13, A14): one manual run each.

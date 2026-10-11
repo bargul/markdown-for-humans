@@ -19,4 +19,5 @@ Agents: boot from this allowlist. Shipped mega-docs live under `roadmap/shipped/
 - `task-p1-wikilinks.md`
 - `task-pdf-advanced-export.md`
 - `task-soft-breaks.md`: TODO, CommonMark soft breaks (#69); prior work on branch `cursor/soft-breaks-retest-ad7a`
-- `task-localization.md`: scoped, translation support (#55, #77); proof of concept on branch `claude/l10n-scoping-d621b8`
+- `task-localization.md`: in progress, translation support (#55, #77) on branch `claude/l10n-scoping-d621b8`
+- `task-cjk-word-count.md`: in progress, word count for Chinese and Japanese text, same branch

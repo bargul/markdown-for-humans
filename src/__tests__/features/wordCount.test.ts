@@ -151,6 +151,60 @@ describe('calculateStats', () => {
     });
   });
 
+  describe('text written without spaces between words', () => {
+    // Word processors count one per Chinese or Japanese character, plus the other words.
+    it('counts each Chinese character', () => {
+      expect(calculateStats('我喜欢吃苹果，你喜欢吃什么水果？').words).toBe(14);
+    });
+
+    it('counts each Japanese character, kana and kanji alike', () => {
+      expect(calculateStats('今日は天気がいいので、公園を散歩しましょう。').words).toBe(20);
+      // The long vowel mark is part of the word, as in エディター.
+      expect(calculateStats('このエディターはマークダウンファイルを開きます。').words).toBe(23);
+    });
+
+    it('adds the spaced words of mixed text to the characters', () => {
+      expect(calculateStats('使用 VS Code 打开 Markdown 文件，然后点击 Export 按钮。').words).toBe(
+        16
+      );
+      expect(calculateStats('VS Code で Markdown ファイルを開きます。').words).toBe(13);
+    });
+
+    it('finds Latin words that touch Chinese characters without a space', () => {
+      expect(calculateStats('打开Markdown文件').words).toBe(5);
+      expect(calculateStats('共有3个文件').words).toBe(6);
+    });
+
+    it('does not count punctuation or Markdown markers around the characters', () => {
+      expect(calculateStats('**你好**，世界！').words).toBe(4);
+      expect(calculateStats('「こんにちは」').words).toBe(5);
+    });
+
+    it('still counts Korean by its spaces', () => {
+      expect(calculateStats('오늘은 날씨가 좋아서 공원에 갑니다.').words).toBe(5);
+    });
+
+    it.each([
+      ['A well-known, state-of-the-art approach', 4],
+      ['See https://example.com/docs/page?id=1 for details', 4],
+      ['**bold** and *italic* with `code` and [a link](http://x.y)', 8],
+      ['const x = foo.bar(baz); // done', 6],
+      ['mail a.b@c.com or open src/app/main.ts', 5],
+      ['Сегодня хорошая погода, пойдём гулять.', 5],
+    ])('leaves the count of spaced text unchanged: %s', (text, expected) => {
+      expect(calculateStats(text).words).toBe(expected);
+    });
+
+    it('estimates reading time at 500 characters a minute, added to the time for other words', () => {
+      expect(calculateStats('字'.repeat(400)).readingTime).toBe(1);
+      expect(calculateStats('字'.repeat(1000)).readingTime).toBe(2);
+      // 200 words (1 minute) plus 500 characters (1 minute)
+      const mixed = `${Array(200).fill('word').join(' ')} ${'字'.repeat(500)}`;
+      expect(calculateStats(mixed).readingTime).toBe(2);
+      expect(calculateStats(`${mixed} ${'字'.repeat(10)}`).readingTime).toBe(3);
+    });
+  });
+
   describe('reading time calculation', () => {
     it('should calculate 1 minute for short text', () => {
       const stats = calculateStats('A short sentence.');

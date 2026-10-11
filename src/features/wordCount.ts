@@ -20,6 +20,47 @@ export interface DocumentStats {
 }
 
 /**
+ * Chinese and Japanese are written without spaces between words. Word
+ * processors count such text by character, so each Han, hiragana and katakana
+ * character (and the katakana long vowel mark) counts as one word.
+ */
+const HAS_UNSPACED_CHARACTER = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\u30fc]/u;
+const UNSPACED_CHARACTER = new RegExp(HAS_UNSPACED_CHARACTER.source, 'gu');
+const LETTERS_OR_DIGITS = /[\p{L}\p{N}]+/gu;
+
+/** Words read per minute in spaced text, and characters per minute in Chinese and Japanese. */
+const WORDS_PER_MINUTE = 200;
+const UNSPACED_CHARACTERS_PER_MINUTE = 500;
+
+/**
+ * Count words the way a word processor does for mixed text.
+ *
+ * @param text - Document or selection text
+ * @returns `spaced`: whitespace-separated words; `unspaced`: Chinese and Japanese characters
+ */
+function countWords(text: string): { spaced: number; unspaced: number } {
+  const tokens = text.split(/\s+/).filter(token => token.length > 0);
+  // Most documents have none of these characters; keep their count exactly as it always was.
+  if (!HAS_UNSPACED_CHARACTER.test(text)) {
+    return { spaced: tokens.length, unspaced: 0 };
+  }
+
+  let spaced = 0;
+  let unspaced = 0;
+  for (const token of tokens) {
+    const characters = token.match(UNSPACED_CHARACTER);
+    if (!characters) {
+      spaced++;
+      continue;
+    }
+    unspaced += characters.length;
+    // Latin words and numbers that touch the characters, as in "打开Markdown文件".
+    spaced += token.replace(UNSPACED_CHARACTER, ' ').match(LETTERS_OR_DIGITS)?.length ?? 0;
+  }
+  return { spaced, unspaced };
+}
+
+/**
  * Calculate document statistics from text content
  *
  * This is a pure function that can be easily unit tested.
@@ -38,9 +79,9 @@ export function calculateStats(text: string): DocumentStats {
     };
   }
 
-  // Word count: split on whitespace, filter empty strings
-  // This handles multiple spaces, tabs, newlines correctly
-  const words = text.split(/\s+/).filter(w => w.length > 0).length;
+  // Word count: whitespace-separated words, plus one per Chinese or Japanese character
+  const { spaced, unspaced } = countWords(text);
+  const words = spaced + unspaced;
 
   // Character counts
   const characters = text.length;
@@ -52,8 +93,15 @@ export function calculateStats(text: string): DocumentStats {
   // Paragraph count: blocks separated by 2+ newlines
   const paragraphs = text.split(/\n\n+/).filter(p => p.trim()).length;
 
-  // Reading time: average 200 WPM, minimum 1 minute for non-empty docs
-  const readingTime = words > 0 ? Math.max(1, Math.ceil(words / 200)) : 0;
+  // Reading time: 200 words a minute, 500 characters a minute for Chinese and Japanese,
+  // minimum 1 minute for non-empty docs
+  const readingTime =
+    words > 0
+      ? Math.max(
+          1,
+          Math.ceil(spaced / WORDS_PER_MINUTE + unspaced / UNSPACED_CHARACTERS_PER_MINUTE)
+        )
+      : 0;
 
   return {
     words,
