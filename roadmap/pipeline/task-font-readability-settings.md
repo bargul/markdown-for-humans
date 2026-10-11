@@ -208,6 +208,10 @@
 - **What:** `origin/main` gained PRs 149, 150 and 151 (release 0.4.4) during this work. Merged it into the branch. The merge was clean, but it placed the changelog entry inside the released `[0.4.4]` section; moved it to `[Unreleased]`.
 - **Results on the merged tree:** `npm run lint` clean. `npx jest`: 219 suites passed, 1 skipped; 4509 tests passed, 27 skipped, 121 todo. Performance gates 7 of 7 and `"passed": true`. `npm run test:integration`: 10 passing on VS Code 1.141.0.
 - **Notes:** This feature is not part of 0.4.4. It needs its own version bump when released.
+### 2026-10-11 - Second merge of main (PRs 152 and 153)
+
+- **What:** Merged `origin/main` 1054729. It brings the Extension Host warm-up that fixes the 1.98.0 flake described above (PR 152) and a clearer "Feedback is not ready" warning (PR 153). One conflict, in `CHANGELOG.md` under `[Unreleased]`; kept both entries.
+- **Results on the merged tree:** `npm run lint` clean. `npx jest`: 219 suites passed, 1 skipped; 4509 tests passed, 27 skipped, 121 todo. Performance gates 7 of 7 and `"passed": true`. `npm run test:integration`: 10 passing on VS Code 1.141.0; 10 of 10 runs green on 1.98.0.
 
 ---
 
@@ -233,4 +237,3 @@
 - Line length (measure) setting, which answers the word wrap width part of #15 and WCAG 1.4.8.
 - Separate heading font family, if #86's reporter asks for per-style control.
 - Reply on #86 and #15 once released (drafts only; owner posts).
-- Investigate separately: the SVG Extension Host test is flaky on VS Code 1.98.0 on `origin/main` (section 7). `markdownForHumans.feedback.start` returns `false` when the first rich editor is not ready within its wait.
