@@ -80,6 +80,15 @@ on Ubuntu and Windows against VS Code 1.98.0 and current stable. To select a
 host version locally, set `VSCODE_TEST_VERSION` before running
 `npm run test:integration`; the default is `stable`.
 
+Every run uses a fresh VS Code profile. Before any suite loads,
+`test/integration/support/warmWebviewRuntime.cjs` (a Mocha global setup wired in
+`.vscode-test.mjs`) opens one rich editor and waits for its renderer. That
+installs VS Code's webview service worker the way a real profile's first editor
+does. Without it, VS Code 1.98 can leave a webview blank forever when editors
+are opened and closed within milliseconds of each other on a cold profile. Do
+not open editors from a `require`d file before this setup has run, and do not
+replace it with a sleep.
+
 CI runs Jest with coverage and parallel workers. Do not assert physical elapsed
 budgets inside that suite: instrumentation and runner contention change timing.
 For scanner complexity, keep the deterministic loop/slice work-budget tests and

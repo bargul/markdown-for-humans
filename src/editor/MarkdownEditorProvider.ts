@@ -39,6 +39,8 @@ import {
 } from '../shared/imageSource';
 import { findImageSourceReferences } from './imageSourceReferences';
 import { applyBlankLinePolicy, type BlankLineMode } from '../shared/blankLinePolicy';
+import { renderL10nBundleAttribute } from '../shared/l10n';
+import { resolveTypographySettings, type TypographySettings } from '../shared/typographySettings';
 import {
   FeedbackReportLockBusyError,
   FeedbackSessionError,
@@ -448,8 +450,37 @@ const FEEDBACK_HOST_ERROR_CODES = new Set<string>([
 // 250 ms best-effort autosave bridge deadline for a fail-closed user action.
 const FEEDBACK_FLUSH_ACK_TIMEOUT_MS = 2_000;
 
+// `"[markdown]"` overrides of `editor.*` never reach webview CSS variables (VS Code
+// builds those from the global editor configuration), so the host reads them here.
+const MARKDOWN_LANGUAGE_SCOPE: vscode.ConfigurationScope = { languageId: 'markdown' };
+const MARKDOWN_EDITOR_FONT_KEYS = ['fontFamily', 'fontWeight', 'fontSize'] as const;
+
 function isFeedbackHostErrorCode(value: unknown): value is FeedbackHostErrorCode {
   return typeof value === 'string' && FEEDBACK_HOST_ERROR_CODES.has(value);
+}
+
+/** One whole sentence per state, so each one can be translated. */
+function feedbackSessionBusyMessage(
+  state: 'closing' | 'resuming' | 'finishing' | 'discarding'
+): string {
+  switch (state) {
+    case 'closing':
+      return vscode.l10n.t(
+        'This feedback session is already closing. Wait for that operation to finish.'
+      );
+    case 'resuming':
+      return vscode.l10n.t(
+        'This feedback session is already resuming. Wait for that operation to finish.'
+      );
+    case 'finishing':
+      return vscode.l10n.t(
+        'This feedback session is already finishing. Wait for that operation to finish.'
+      );
+    case 'discarding':
+      return vscode.l10n.t(
+        'This feedback session is already discarding. Wait for that operation to finish.'
+      );
+  }
 }
 
 /**
@@ -597,6 +628,34 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     const config = vscode.workspace.getConfiguration();
     const value = config.get<string>('markdownForHumans.blankLines.mode', 'strip');
     return value === 'preserve' ? 'preserve' : 'strip';
+  }
+
+  /**
+   * Reads the reader typography settings (`markdownForHumans.font.*`) and
+   * resolves them for the webview. Every field is `null` at the defaults, so
+   * an untouched installation changes nothing.
+   *
+   * With `markdownForHumans.font.useEditorFont` on, body text also takes
+   * `editor.fontFamily`, `editor.fontWeight` and `editor.fontSize`, including
+   * values set inside a `"[markdown]"` block.
+   */
+  private getTypographySettings(): TypographySettings {
+    const config = vscode.workspace.getConfiguration();
+    const editorConfig = config.get<boolean>('markdownForHumans.font.useEditorFont', false)
+      ? vscode.workspace.getConfiguration('editor', MARKDOWN_LANGUAGE_SCOPE)
+      : undefined;
+    return resolveTypographySettings({
+      family: config.get('markdownForHumans.font.family'),
+      weight: config.get('markdownForHumans.font.weight'),
+      lineHeight: config.get('markdownForHumans.font.lineHeight'),
+      letterSpacing: config.get('markdownForHumans.font.letterSpacing'),
+      wordSpacing: config.get('markdownForHumans.font.wordSpacing'),
+      editorFont: editorConfig && {
+        family: editorConfig.get('fontFamily'),
+        weight: editorConfig.get('fontWeight'),
+        size: editorConfig.get('fontSize'),
+      },
+    });
   }
 
   private async syncMarkdownlintMd012(mode: BlankLineMode): Promise<void> {
@@ -1094,7 +1153,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       const imageBasePath = this.getImageBasePath(document);
       if (imageBasePath) {
         vscode.window.showInformationMessage(
-          `You are working without a workspace. Images will be saved to: ${imageBasePath}`
+          vscode.l10n.t(
+            'You are working without a workspace. Images will be saved to: {0}',
+            imageBasePath
+          )
         );
       }
     }
@@ -1157,6 +1219,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         e.affectsConfiguration('markdownForHumans.paragraph.spacingBefore') ||
         e.affectsConfiguration('markdownForHumans.paragraph.spacingAfter') ||
         e.affectsConfiguration('markdownForHumans.zoom') ||
+        e.affectsConfiguration('markdownForHumans.font') ||
+        MARKDOWN_EDITOR_FONT_KEYS.some(key =>
+          e.affectsConfiguration(`editor.${key}`, MARKDOWN_LANGUAGE_SCOPE)
+        ) ||
         e.affectsConfiguration('markdownForHumans.enableMath') ||
         e.affectsConfiguration('markdownForHumans.formattingShortcuts.enabled')
       ) {
@@ -1209,6 +1275,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           paragraphSpacingBefore: paragraphSpacingBefore,
           paragraphSpacingAfter: paragraphSpacingAfter,
           zoom: zoom,
+          typography: this.getTypographySettings(),
           formattingShortcutsEnabled,
           blankLineMode,
           enableMath: enableMath,
@@ -1389,6 +1456,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       paragraphSpacingBefore: paragraphSpacingBefore,
       paragraphSpacingAfter: paragraphSpacingAfter,
       zoom: zoom,
+      typography: this.getTypographySettings(),
       formattingShortcutsEnabled,
       blankLineMode,
       enableMath: enableMath,
@@ -1547,7 +1615,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           type: 'feedback.error',
           ...(requestId ? { requestId } : {}),
           ...(sessionId ? { sessionId } : {}),
-          message: 'The feedback request was malformed or unsupported.',
+          message: vscode.l10n.t('The feedback request was malformed or unsupported.'),
           recoverable: false,
         });
         return;
@@ -1925,6 +1993,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           paragraphSpacingBefore: paragraphSpacingBefore,
           paragraphSpacingAfter: paragraphSpacingAfter,
           zoom: zoom,
+          typography: this.getTypographySettings(),
           formattingShortcutsEnabled,
           blankLineMode,
           enableMath: enableMath,
@@ -2443,8 +2512,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           replacesLockId,
           viewGeneration,
           revision: 1,
-          message:
-            'Feedback is active in another editor split. This view is read-only until it ends.',
+          message: vscode.l10n.t(
+            'Feedback is active in another editor split. This view is read-only until it ends.'
+          ),
         });
       this.pendingFeedbackPeerLockAcquisitions.set(webview, message);
 
@@ -2594,7 +2664,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!workspaceRoot) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        'Open this saved Markdown file inside a workspace before transferring Feedback.'
+        vscode.l10n.t(
+          'Open this saved Markdown file inside a workspace before transferring Feedback.'
+        )
       );
     }
     const identity = {
@@ -2609,7 +2681,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       revision: pending.revision,
       documentVersion: pending.documentVersion,
       sourceSha256: pending.sourceSha256,
-      peerLockMessage: 'Feedback resumed in another rich view. This view is now read-only.',
+      peerLockMessage: vscode.l10n.t(
+        'Feedback resumed in another rich view. This view is now read-only.'
+      ),
     };
     const message: Extract<FeedbackHostMessage, { type: 'feedback.session.transfer' }> =
       phase === 'apply'
@@ -3554,7 +3628,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       document,
       webview,
       'MD4H-FB-STORE-002',
-      'The rich editor did not confirm Feedback activation. The draft was saved and editing was restored.'
+      vscode.l10n.t(
+        'The rich editor did not confirm Feedback activation. The draft was saved and editing was restored.'
+      )
     );
   }
 
@@ -3785,7 +3861,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       type: 'feedback.invalidated',
       sessionId: session.sessionId,
       code: FEEDBACK_ERROR_CODES.sourceChanged,
-      message: 'The Markdown source changed outside the frozen feedback snapshot.',
+      message: vscode.l10n.t('The Markdown source changed outside the frozen feedback snapshot.'),
     });
   }
 
@@ -3797,7 +3873,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!(await this.drainDocumentEdits(document))) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not apply pending editor changes before starting feedback.'
+        vscode.l10n.t('Could not apply pending editor changes before starting feedback.')
       );
     }
 
@@ -3873,13 +3949,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       }
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not flush the latest editor changes, so feedback did not start.'
+        vscode.l10n.t('Could not flush the latest editor changes, so feedback did not start.')
       );
     }
     if (outcome === 'rejected') {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not flush the latest editor changes, so feedback did not start.'
+        vscode.l10n.t('Could not flush the latest editor changes, so feedback did not start.')
       );
     }
 
@@ -3889,7 +3965,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!(await this.drainDocumentEdits(document))) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not apply pending editor changes before starting feedback.'
+        vscode.l10n.t('Could not apply pending editor changes before starting feedback.')
       );
     }
     const completedAfter = this.documentEditAckHistory.get(webview);
@@ -3903,7 +3979,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (rejected) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not apply the latest editor changes, so feedback did not start.'
+        vscode.l10n.t('Could not apply the latest editor changes, so feedback did not start.')
       );
     }
     return true;
@@ -3937,7 +4013,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (target === ownerWebview) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-002',
-          'The active rich editor is no longer available, so feedback did not start.'
+          vscode.l10n.t('The active rich editor is no longer available, so feedback did not start.')
         );
       }
     }
@@ -3964,7 +4040,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (webviews.some(webview => !this.feedbackSnapshotCapableWebviews.has(webview))) {
       throw new FeedbackSessionError(
         'MD4H-FB-SNAPSHOT-001',
-        'Reload every open rich editor split before starting Feedback so their snapshots can be verified.'
+        vscode.l10n.t(
+          'Reload every open rich editor split before starting Feedback so their snapshots can be verified.'
+        )
       );
     }
     const documentVersion = this.getDocumentVersion(document);
@@ -3990,7 +4068,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (dirtyDigests.size > 1) {
       throw new FeedbackSessionError(
         'MD4H-FB-SNAPSHOT-001',
-        'Two dirty rich editor splits contain divergent Markdown. Save or reconcile the splits before starting Feedback.'
+        vscode.l10n.t(
+          'Two dirty rich editor splits contain divergent Markdown. Save or reconcile the splits before starting Feedback.'
+        )
       );
     }
   }
@@ -4003,7 +4083,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (document.uri.scheme !== 'file') {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        'Save this Markdown file inside the workspace before starting feedback.'
+        vscode.l10n.t('Save this Markdown file inside the workspace before starting feedback.')
       );
     }
 
@@ -4016,7 +4096,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!(await this.drainDocumentEdits(document))) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not settle editor changes after installing the Feedback split locks.'
+        vscode.l10n.t('Could not settle editor changes after installing the Feedback split locks.')
       );
     }
 
@@ -4031,7 +4111,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       } catch (error) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-002',
-          `Could not save the Markdown snapshot: ${error instanceof Error ? error.message : String(error)}`
+          vscode.l10n.t(
+            'Could not save the Markdown snapshot: {0}',
+            error instanceof Error ? error.message : String(error)
+          )
         );
       } finally {
         if (transition) transition.acceptingSaveEdits = false;
@@ -4039,7 +4122,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (!saved || document.isDirty) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-002',
-          'The Markdown file could not be saved, so feedback did not start.'
+          vscode.l10n.t('The Markdown file could not be saved, so feedback did not start.')
         );
       }
     }
@@ -4072,7 +4155,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (webviews.some(webview => !this.feedbackSnapshotCapableWebviews.has(webview))) {
       throw new FeedbackSessionError(
         'MD4H-FB-SNAPSHOT-001',
-        'A rich editor split cannot verify the saved Feedback snapshot. Reload every split and try again.'
+        vscode.l10n.t(
+          'A rich editor split cannot verify the saved Feedback snapshot. Reload every split and try again.'
+        )
       );
     }
 
@@ -4111,7 +4196,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     ) {
       throw new FeedbackSessionError(
         'MD4H-FB-SNAPSHOT-001',
-        'Feedback could not start because the rendered Markdown differs from the saved file.'
+        vscode.l10n.t(
+          'Feedback could not start because the rendered Markdown differs from the saved file.'
+        )
       );
     }
     const ownerIndex = webviews.indexOf(ownerWebview);
@@ -4176,7 +4263,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!session || session.ownerWebview !== webview || session.sessionId !== message.sessionId) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        'This feedback session is no longer active.'
+        vscode.l10n.t('This feedback session is no longer active.')
       );
     }
     return session;
@@ -4508,7 +4595,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       session.lastErrorCode = FEEDBACK_ERROR_CODES.targetDoesNotMap;
       throw Object.assign(
         new Error(
-          'This Feedback selection predates structured evidence. Reload the rich editor and select it again.'
+          vscode.l10n.t(
+            'This Feedback selection predates structured evidence. Reload the rich editor and select it again.'
+          )
         ),
         { code: FEEDBACK_ERROR_CODES.targetDoesNotMap }
       );
@@ -4798,14 +4887,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch {
       throw new FeedbackSessionError(
         'MD4H-FB-SNAPSHOT-001',
-        'The Markdown source could not be re-read. The feedback draft was preserved.'
+        vscode.l10n.t('The Markdown source could not be re-read. The feedback draft was preserved.')
       );
     }
     const sourceSha256 = crypto.createHash('sha256').update(sourceBytes).digest('hex');
     if (sourceSha256 !== expectedSha256) {
       throw new FeedbackSessionError(
         'MD4H-FB-SNAPSHOT-001',
-        'The Markdown source changed outside the frozen feedback snapshot.'
+        vscode.l10n.t('The Markdown source changed outside the frozen feedback snapshot.')
       );
     }
   }
@@ -4844,7 +4933,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (session.invalidated) {
         throw new FeedbackSessionError(
           'MD4H-FB-SNAPSHOT-001',
-          'The Markdown source changed during the feedback write. The draft was preserved.'
+          vscode.l10n.t(
+            'The Markdown source changed during the feedback write. The draft was preserved.'
+          )
         );
       }
       await this.assertFeedbackSourceSha256(document, session.store.snapshot.sourceSha256);
@@ -4881,8 +4972,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     webview: vscode.Webview
   ): void {
     const documentKey = document.uri.toString();
-    const unavailableMessage =
-      'Active Feedback is no longer available in that split. Try again, or reopen this document and resume its saved Feedback draft.';
+    const unavailableMessage = vscode.l10n.t(
+      'Active Feedback is no longer available in that split. Try again, or reopen this document and resume its saved Feedback draft.'
+    );
     try {
       const session = this.feedbackSessions.get(documentKey);
       const peers = this.feedbackWebviews.get(documentKey);
@@ -4896,7 +4988,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         (this.feedbackTransitions.get(documentKey)?.lockId === message.lockId ||
           (session?.sessionId === message.lockId && session.ownerWebview === webview))
       ) {
-        void vscode.window.showWarningMessage('Feedback is changing state. Try again in a moment.');
+        void vscode.window.showWarningMessage(
+          vscode.l10n.t('Feedback is changing state. Try again in a moment.')
+        );
         return;
       }
       if (
@@ -4917,7 +5011,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         this.feedbackTransitions.has(documentKey) ||
         this.pendingFeedbackSessionTransfers.has(documentKey)
       ) {
-        void vscode.window.showWarningMessage('Feedback is changing state. Try again in a moment.');
+        void vscode.window.showWarningMessage(
+          vscode.l10n.t('Feedback is changing state. Try again in a moment.')
+        );
         return;
       }
       const panels = this.openPanels.get(documentKey);
@@ -4981,7 +5077,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         if (!workspaceRoot || document.uri.scheme !== 'file') {
           throw new FeedbackSessionError(
             'MD4H-FB-STORE-001',
-            'Open this saved Markdown file inside a workspace to reveal its feedback draft.'
+            vscode.l10n.t(
+              'Open this saved Markdown file inside a workspace to reveal its feedback draft.'
+            )
           );
         }
         const store = await FeedbackSessionStore.resume({
@@ -5303,10 +5401,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       }
       if (session.phase !== 'active' || session.closeOperation !== undefined) {
         const closeState = session.phase === 'active' ? 'closing' : session.phase;
-        throw new FeedbackSessionError(
-          'MD4H-FB-STORE-001',
-          `This feedback session is already ${closeState}. Wait for that operation to finish.`
-        );
+        throw new FeedbackSessionError('MD4H-FB-STORE-001', feedbackSessionBusyMessage(closeState));
       }
       if (
         session.invalidated &&
@@ -5318,7 +5413,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       ) {
         throw new FeedbackSessionError(
           'MD4H-FB-SNAPSHOT-001',
-          'The source changed. The draft is preserved, but new feedback and finishing are disabled.'
+          vscode.l10n.t(
+            'The source changed. The draft is preserved, but new feedback and finishing are disabled.'
+          )
         );
       }
       if (message.type === 'feedback.finish' || message.type === 'feedback.discard') {
@@ -5577,8 +5674,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
               round: result.round,
             });
             if (handoff.warning !== undefined) {
-              const warningMessage =
-                'The feedback handoff prompt template is invalid. ' + handoff.warning.message;
+              const warningMessage = vscode.l10n.t(
+                'The feedback handoff prompt template is invalid. {0}',
+                handoff.warning.message
+              );
               try {
                 void Promise.resolve(vscode.window.showWarningMessage(warningMessage)).catch(
                   warningError => {
@@ -5659,7 +5758,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           if (!workspaceRoot || document.uri.scheme !== 'file') {
             throw new FeedbackSessionError(
               'MD4H-FB-STORE-001',
-              'Open this saved Markdown file inside a workspace to preview the agent handoff.'
+              vscode.l10n.t(
+                'Open this saved Markdown file inside a workspace to preview the agent handoff.'
+              )
             );
           }
           const snapshot = session.store.snapshot;
@@ -5704,7 +5805,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
             `state: ${session.store.snapshot.state}`,
           ].join('\n');
           if (!vscode.env.clipboard) {
-            throw new FeedbackSessionError('MD4H-FB-STORE-002', 'The clipboard is unavailable.');
+            throw new FeedbackSessionError(
+              'MD4H-FB-STORE-002',
+              vscode.l10n.t('The clipboard is unavailable.')
+            );
           }
           await vscode.env.clipboard.writeText(diagnostics);
           this.postFeedbackMessage(webview, {
@@ -5722,29 +5826,36 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
             await this.waitForFeedbackMutations(session);
             await session.store.validateContainedPaths();
             const itemCount = session.store.items.length;
-            const itemLabel = `${itemCount} saved feedback ${itemCount === 1 ? 'item' : 'items'}`;
+            const itemLabel = vscode.l10n.t(
+              itemCount === 1 ? '{0} saved feedback item' : '{0} saved feedback items',
+              itemCount
+            );
+            const discardDraft = vscode.l10n.t('Discard draft');
             const choice = await vscode.window.showWarningMessage(
-              'Discard this Feedback draft?',
+              vscode.l10n.t('Discard this Feedback draft?'),
               {
                 modal: true,
-                detail: `This draft contains ${itemLabel}. Its bundle will be moved to Trash, and Feedback mode will end.`,
+                detail: vscode.l10n.t(
+                  'This draft contains {0}. Its bundle will be moved to Trash, and Feedback mode will end.',
+                  itemLabel
+                ),
               },
-              'Discard draft'
+              discardDraft
             );
-            if (choice !== 'Discard draft') {
+            if (choice !== discardDraft) {
               session.phase = 'active';
               return;
             }
             if (!vscode.workspace.fs) {
               throw new FeedbackSessionError(
                 'MD4H-FB-STORE-002',
-                'The workspace filesystem is unavailable.'
+                vscode.l10n.t('The workspace filesystem is unavailable.')
               );
             }
             if (this.feedbackSessions.get(document.uri.toString()) !== session) {
               throw new FeedbackSessionError(
                 'MD4H-FB-STORE-001',
-                'This feedback session is no longer active.'
+                vscode.l10n.t('This feedback session is no longer active.')
               );
             }
             await session.store.validateContainedPaths();
@@ -5754,7 +5865,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
                 if (this.feedbackSessions.get(document.uri.toString()) !== session) {
                   throw new FeedbackSessionError(
                     'MD4H-FB-STORE-001',
-                    'This feedback session is no longer active.'
+                    vscode.l10n.t('This feedback session is no longer active.')
                   );
                 }
                 await session.store.validateContainedPaths();
@@ -5825,10 +5936,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           type: 'feedback.invalidated',
           sessionId: active.sessionId,
           code: FEEDBACK_ERROR_CODES.sourceChanged,
-          message: 'The Markdown source changed outside the frozen feedback snapshot.',
+          message: vscode.l10n.t(
+            'The Markdown source changed outside the frozen feedback snapshot.'
+          ),
         });
       }
-      const errorMessage = error instanceof Error ? error.message : 'The feedback request failed.';
+      const errorMessage =
+        error instanceof Error ? error.message : vscode.l10n.t('The feedback request failed.');
       if (
         error instanceof FeedbackReportLockBusyError ||
         FEEDBACK_NOTIFIED_ERROR_MESSAGES.has(message.type)
@@ -5959,7 +6073,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (!workspaceRoot) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'Open this saved Markdown file inside a workspace before starting feedback.'
+          vscode.l10n.t(
+            'Open this saved Markdown file inside a workspace before starting feedback.'
+          )
         );
       }
 
@@ -6006,7 +6122,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         if (!message.blocks) {
           throw new FeedbackSessionError(
             'MD4H-FB-SNAPSHOT-001',
-            'Reload the rich editor before starting Feedback so the saved snapshot can be verified.'
+            vscode.l10n.t(
+              'Reload the rich editor before starting Feedback so the saved snapshot can be verified.'
+            )
           );
         }
         const anchorResult = buildFeedbackAnchorMap(sourceBytes.toString('utf8'), message.blocks);
@@ -6185,7 +6303,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     ) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        'Feedback state changed while Start was being prepared. Select Start feedback again to Resume or recover the draft.'
+        vscode.l10n.t(
+          'Feedback state changed while Start was being prepared. Select Start feedback again to Resume or recover the draft.'
+        )
       );
     }
     const token = Symbol('feedback-transition');
@@ -6239,7 +6359,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       this.postFeedbackMessage(webview, {
         type: 'feedback.peer.locked',
         lockId: recoveryLockId,
-        message: 'Restoring Feedback after the rich view reloaded. This view is read-only.',
+        message: vscode.l10n.t(
+          'Restoring Feedback after the rich view reloaded. This view is read-only.'
+        ),
       });
       this.updateWebview(document, webview, { force: true });
       const recoveryField = recoveringNewOwner
@@ -6283,7 +6405,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       this.postFeedbackMessage(webview, {
         type: 'feedback.peer.locked',
         lockId: ownedSession.sessionId,
-        message: 'Restoring active Feedback. This view is temporarily read-only.',
+        message: vscode.l10n.t('Restoring active Feedback. This view is temporarily read-only.'),
       });
       // This payload initializes TipTap before it can create and announce the
       // replacement Feedback controller. The later acknowledged activation is
@@ -6297,14 +6419,18 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       this.postFeedbackMessage(webview, {
         type: 'feedback.peer.locked',
         lockId,
-        message: 'Restoring the previous Feedback draft. This view is temporarily read-only.',
+        message: vscode.l10n.t(
+          'Restoring the previous Feedback draft. This view is temporarily read-only.'
+        ),
       });
     }
     void this.demoteFeedbackOwnerAfterReady(document, webview).catch(error => {
       console.error('[MD4H] Failed recovering Feedback after webview reload:', error);
       this.postFeedbackMessage(webview, {
         type: 'feedback.error',
-        message: 'The previous Feedback draft could not be restored. Try Start feedback again.',
+        message: vscode.l10n.t(
+          'The previous Feedback draft could not be restored. Try Start feedback again.'
+        ),
         recoverable: true,
       });
     });
@@ -6367,13 +6493,15 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       ) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'The active Feedback session changed while its renderer was being restored.'
+          vscode.l10n.t(
+            'The active Feedback session changed while its renderer was being restored.'
+          )
         );
       }
       if (session.invalidated) {
         throw new FeedbackSessionError(
           'MD4H-FB-SNAPSHOT-001',
-          'The Markdown source changed outside the frozen feedback snapshot.'
+          vscode.l10n.t('The Markdown source changed outside the frozen feedback snapshot.')
         );
       }
 
@@ -6393,7 +6521,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (documentSha256 !== this.feedbackSessionSourceTextSha256(session)) {
         throw new FeedbackSessionError(
           'MD4H-FB-SNAPSHOT-001',
-          'The Markdown source changed outside the frozen feedback snapshot.'
+          vscode.l10n.t('The Markdown source changed outside the frozen feedback snapshot.')
         );
       }
       await this.assertFeedbackSourceSha256(document, session.store.snapshot.sourceSha256);
@@ -6409,7 +6537,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (!workspaceRoot || document.uri.scheme !== 'file') {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'Open this saved Markdown file inside a workspace before restoring Feedback.'
+          vscode.l10n.t(
+            'Open this saved Markdown file inside a workspace before restoring Feedback.'
+          )
         );
       }
       this.postFeedbackSessionStarted(requestId, workspaceRoot, session, document, webview);
@@ -6427,7 +6557,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         code,
         error instanceof Error
           ? error.message
-          : 'The active Feedback session could not be restored.'
+          : vscode.l10n.t('The active Feedback session could not be restored.')
       );
     }
   }
@@ -6897,7 +7027,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!(await this.drainDocumentEdits(document))) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not settle editor changes before releasing Feedback ownership.'
+        vscode.l10n.t('Could not settle editor changes before releasing Feedback ownership.')
       );
     }
     await this.acquireFeedbackPeerLocks(
@@ -6974,7 +7104,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!(await this.drainDocumentEdits(document))) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not settle editor changes before releasing Feedback transition ownership.'
+        vscode.l10n.t(
+          'Could not settle editor changes before releasing Feedback transition ownership.'
+        )
       );
     }
     await this.acquireFeedbackPeerLocks(
@@ -7012,7 +7144,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     ) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        'Feedback changed since this draft action was shown. Select Start feedback to Resume or recover the current session.'
+        vscode.l10n.t(
+          'Feedback changed since this draft action was shown. Select Start feedback to Resume or recover the current session.'
+        )
       );
     }
   }
@@ -7022,19 +7156,21 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (transition?.token !== token) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        'The feedback start was cancelled because its editor closed or changed state.'
+        vscode.l10n.t(
+          'The feedback start was cancelled because its editor closed or changed state.'
+        )
       );
     }
     if (transition.invalidated) {
       throw new FeedbackSessionError(
         'MD4H-FB-SNAPSHOT-001',
-        'The Markdown source changed while the feedback snapshot was starting.'
+        vscode.l10n.t('The Markdown source changed while the feedback snapshot was starting.')
       );
     }
     if (transition.ownerDisposed) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        'The feedback start was cancelled because its editor closed.'
+        vscode.l10n.t('The feedback start was cancelled because its editor closed.')
       );
     }
     return transition;
@@ -7075,7 +7211,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!(await this.drainDocumentEdits(document))) {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-002',
-        'Could not settle editor changes before releasing the Feedback transition.'
+        vscode.l10n.t('Could not settle editor changes before releasing the Feedback transition.')
       );
     }
     transition = this.feedbackTransitions.get(documentKey);
@@ -7206,7 +7342,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (!workspaceRoot) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'Open this saved Markdown file inside a workspace before resuming feedback.'
+          vscode.l10n.t(
+            'Open this saved Markdown file inside a workspace before resuming feedback.'
+          )
         );
       }
 
@@ -7236,7 +7374,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         if (!message.blocks) {
           throw new FeedbackSessionError(
             'MD4H-FB-SNAPSHOT-001',
-            'Reload the rich editor before resuming Feedback so the saved snapshot can be verified.'
+            vscode.l10n.t(
+              'Reload the rich editor before resuming Feedback so the saved snapshot can be verified.'
+            )
           );
         }
         const anchorResult = buildFeedbackAnchorMap(sourceBytes.toString('utf8'), message.blocks);
@@ -7350,7 +7490,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (current.ownerWebview !== webview) {
         throw new FeedbackSessionError(
           'MD4H-FB-SNAPSHOT-001',
-          'The source changed while Feedback was active in another rich view.'
+          vscode.l10n.t('The source changed while Feedback was active in another rich view.')
         );
       }
       await this.waitForFeedbackMutations(current);
@@ -7374,7 +7514,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (current.phase !== 'active') {
       throw new FeedbackSessionError(
         'MD4H-FB-STORE-001',
-        `This feedback session is already ${current.phase}. Wait for that operation to finish.`
+        feedbackSessionBusyMessage(current.phase)
       );
     }
     current.phase = 'resuming';
@@ -7383,14 +7523,16 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (this.feedbackSessions.get(documentKey) !== current) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'The feedback session changed while Resume was being confirmed.'
+          vscode.l10n.t('The feedback session changed while Resume was being confirmed.')
         );
       }
       const workspaceRoot = this.getWorkspaceFolderPath(document);
       if (!workspaceRoot || document.uri.scheme !== 'file') {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'Open this saved Markdown file inside a workspace before resuming feedback.'
+          vscode.l10n.t(
+            'Open this saved Markdown file inside a workspace before resuming feedback.'
+          )
         );
       }
       const sourceBytes = await readFile(document.uri.fsPath);
@@ -7402,7 +7544,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       ) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'The feedback session changed while Resume was being confirmed.'
+          vscode.l10n.t('The feedback session changed while Resume was being confirmed.')
         );
       }
       let nextAnchorMap = current.anchorMap;
@@ -7432,7 +7574,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         if (!message.blocks) {
           throw new FeedbackSessionError(
             'MD4H-FB-SNAPSHOT-001',
-            'Reload the rich editor before moving this Feedback session.'
+            vscode.l10n.t('Reload the rich editor before moving this Feedback session.')
           );
         }
         const anchorResult = buildFeedbackAnchorMap(sourceBytes.toString('utf8'), message.blocks);
@@ -7481,8 +7623,15 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-002',
           transferCompletion === 'rolled-back'
-            ? 'The Feedback handoff was cancelled because the source changed during transfer.'
-            : 'The target rich editor was unavailable. Feedback remains reserved in its previous view.'
+            ? vscode.l10n.t({
+                message:
+                  'The Feedback handoff was cancelled because the source changed during transfer.',
+                comment:
+                  'Here "handoff" is the Feedback session moving to another editor view, not the prompt for an AI agent.',
+              })
+            : vscode.l10n.t(
+                'The target rich editor was unavailable. Feedback remains reserved in its previous view.'
+              )
         );
       }
       return true;
@@ -7513,7 +7662,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
               type: 'feedback.invalidated',
               sessionId: current.sessionId,
               code: FEEDBACK_ERROR_CODES.sourceChanged,
-              message: 'The Markdown source changed outside the frozen feedback snapshot.',
+              message: vscode.l10n.t(
+                'The Markdown source changed outside the frozen feedback snapshot.'
+              ),
             });
           }
         } else if (current.ownerWebview === webview) {
@@ -7535,7 +7686,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
               type: 'feedback.invalidated',
               sessionId: current.sessionId,
               code: FEEDBACK_ERROR_CODES.sourceChanged,
-              message: 'The Markdown source changed outside the frozen feedback snapshot.',
+              message: vscode.l10n.t(
+                'The Markdown source changed outside the frozen feedback snapshot.'
+              ),
             });
           }
         }
@@ -7612,9 +7765,17 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       type: 'feedback.error',
       sessionId: session.sessionId,
       code: FEEDBACK_ERROR_CODES.targetDoesNotMap,
-      message: `Exact highlighting could not be restored for ${visibleIds}${
-        remaining > 0 ? ` and ${remaining} more` : ''
-      }. Their source-line anchors are preserved and block markers are shown.`,
+      message:
+        remaining > 0
+          ? vscode.l10n.t(
+              'Exact highlighting could not be restored for {0} and {1} more. Their source-line anchors are preserved and block markers are shown.',
+              visibleIds,
+              remaining
+            )
+          : vscode.l10n.t(
+              'Exact highlighting could not be restored for {0}. Their source-line anchors are preserved and block markers are shown.',
+              visibleIds
+            ),
       recoverable: true,
     });
   }
@@ -7710,7 +7871,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       if (!workspaceRoot || document.uri.scheme !== 'file') {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-001',
-          'Open this saved Markdown file inside a workspace before discarding feedback.'
+          vscode.l10n.t(
+            'Open this saved Markdown file inside a workspace before discarding feedback.'
+          )
         );
       }
       const store = await FeedbackSessionStore.resume({
@@ -7721,17 +7884,18 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       });
       this.assertFeedbackTransition(documentKey, transitionToken);
       await store.validateContainedPaths();
+      const discardDraft = vscode.l10n.t('Discard draft');
       const choice = await vscode.window.showWarningMessage(
-        'Move this feedback draft to Trash?',
+        vscode.l10n.t('Move this feedback draft to Trash?'),
         { modal: true },
-        'Discard draft'
+        discardDraft
       );
-      if (choice !== 'Discard draft') return;
+      if (choice !== discardDraft) return;
       this.assertFeedbackTransition(documentKey, transitionToken);
       if (!vscode.workspace.fs) {
         throw new FeedbackSessionError(
           'MD4H-FB-STORE-002',
-          'The workspace filesystem is unavailable.'
+          vscode.l10n.t('The workspace filesystem is unavailable.')
         );
       }
       await store.validateContainedPaths();
@@ -7775,16 +7939,18 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       console.warn('[MD4H] Could not move the Feedback draft to Trash:', error);
     }
+    const deletePermanently = vscode.l10n.t('Delete permanently');
     const choice = await vscode.window.showWarningMessage(
-      'Could not move this Feedback draft to Trash. Delete it permanently?',
+      vscode.l10n.t('Could not move this Feedback draft to Trash. Delete it permanently?'),
       {
         modal: true,
-        detail:
-          'This location does not support Trash, for example a remote or container workspace. Permanent deletion cannot be undone.',
+        detail: vscode.l10n.t(
+          'This location does not support Trash, for example a remote or container workspace. Permanent deletion cannot be undone.'
+        ),
       },
-      'Delete permanently'
+      deletePermanently
     );
-    if (choice !== 'Delete permanently') return false;
+    if (choice !== deletePermanently) return false;
     await revalidate();
     await vscode.workspace.fs.delete(bundleUri, { recursive: true, useTrash: false });
     return true;
@@ -7974,13 +8140,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     const basePath = this.getImageBasePath(document);
 
     // Build file-type filter
+    const imagesLabel = vscode.l10n.t('Images');
     const imageFilters: { [name: string]: string[] } = {
-      Images: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff', 'tif'],
+      [imagesLabel]: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff', 'tif'],
     };
     const allFilters: { [name: string]: string[] } = {
-      'All Files': ['*'],
+      [vscode.l10n.t('All Files')]: ['*'],
       Markdown: ['md', 'mdx'],
-      Images: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'],
+      [imagesLabel]: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'],
     };
     const filters = fileType === 'image' ? imageFilters : allFilters;
 
@@ -7990,7 +8157,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         canSelectMany: false,
         canSelectFolders: false,
         canSelectFiles: true,
-        openLabel: 'Select File',
+        openLabel: vscode.l10n.t('Select File'),
         defaultUri,
         filters,
       });
@@ -8023,7 +8190,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         relativePath = absoluteSelected.replace(/\\/g, '/');
         // Warn the user about document portability issues
         vscode.window.showWarningMessage(
-          'You selected a file outside the current workspace. An absolute path was used, which may break if you share this document.'
+          vscode.l10n.t(
+            'You selected a file outside the current workspace. An absolute path was used, which may break if you share this document.'
+          )
         );
       }
       webview.postMessage({
@@ -8358,7 +8527,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         // Get save location
         const saveBasePath = this.getImageStorageBasePath(document);
         if (!saveBasePath) {
-          const errorMessage = 'Cannot copy image: no base directory available';
+          const errorMessage = vscode.l10n.t('Cannot copy image: no base directory available');
           vscode.window.showErrorMessage(errorMessage);
           return;
         }
@@ -8407,7 +8576,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           }
           if (!foundAvailableName) {
             throw new Error(
-              `Cannot copy image: too many existing files matching "${baseFilename}-N${extension}"`
+              vscode.l10n.t(
+                'Cannot copy image: too many existing files matching "{0}-N{1}"',
+                baseFilename,
+                extension
+              )
             );
           }
         }
@@ -8439,7 +8612,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`[MD4H] Failed to copy workspace image: ${errorMessage}`);
-        vscode.window.showErrorMessage(`Failed to copy image: ${errorMessage}`);
+        vscode.window.showErrorMessage(vscode.l10n.t('Failed to copy image: {0}', errorMessage));
       }
       return;
     }
@@ -8527,8 +8700,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       retainedBytes + denseData.byteLength >
         MarkdownEditorProvider.PENDING_HOST_IMAGE_SAVE_BYTE_LIMIT
     ) {
-      const error =
-        'Too many images are still being saved. Wait for the current image saves to finish and try again.';
+      const error = vscode.l10n.t(
+        'Too many images are still being saved. Wait for the current image saves to finish and try again.'
+      );
       vscode.window.showErrorMessage(error);
       this.startPendingImageSaveRejectionDelivery(webview, placeholderId, viewGeneration, error);
       return;
@@ -8899,13 +9073,16 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     // Resolve where to save new images (may be doc-relative or workspace-level).
     const saveBasePath = this.getImageStorageBasePath(document);
     if (!saveBasePath) {
-      const errorMessage = 'Cannot save image: no base directory available';
+      const errorMessage = vscode.l10n.t('Cannot save image: no base directory available');
       vscode.window.showErrorMessage(errorMessage);
       return { kind: 'error', error: errorMessage };
     }
     const imagesDir = path.join(saveBasePath, imageFolderName);
     if (!isPathContainedWithin(imagesDir, saveBasePath)) {
-      const errorMessage = `Refusing to save image outside the base directory: ${imageFolderName}`;
+      const errorMessage = vscode.l10n.t(
+        'Refusing to save image outside the base directory: {0}',
+        imageFolderName
+      );
       vscode.window.showErrorMessage(errorMessage);
       return { kind: 'error', error: errorMessage };
     }
@@ -8953,7 +9130,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         }
         if (!foundAvailableName) {
           throw new Error(
-            `Cannot save image: too many existing files matching "${baseFilename}-N${extension}"`
+            vscode.l10n.t(
+              'Cannot save image: too many existing files matching "{0}-N{1}"',
+              baseFilename,
+              extension
+            )
           );
         }
       }
@@ -8978,7 +9159,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       return { kind: 'saved', destination: encodeImageFilePath(relativePath) };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      vscode.window.showErrorMessage(`Failed to save image: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to save image: {0}', errorMessage));
       return { kind: 'error', error: errorMessage };
     }
   }
@@ -9040,15 +9221,21 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       );
       if (!insideAllowedRoot) {
         if (!absolutePathFromMessage) {
-          throw new Error(`Refusing to resize image outside the document/workspace: ${imagePath}`);
+          throw new Error(
+            vscode.l10n.t('Refusing to resize image outside the document/workspace: {0}', imagePath)
+          );
         }
+        const overwrite = vscode.l10n.t('Overwrite');
         const choice = await vscode.window.showWarningMessage(
-          `Resize will overwrite a file outside this workspace:\n\n${absolutePath}\n\nProceed?`,
+          vscode.l10n.t(
+            'Resize will overwrite a file outside this workspace:\n\n{0}\n\nProceed?',
+            absolutePath
+          ),
           { modal: true },
-          'Overwrite'
+          overwrite
         );
-        if (choice !== 'Overwrite') {
-          throw new Error('Resize cancelled by user.');
+        if (choice !== overwrite) {
+          throw new Error(vscode.l10n.t('Resize cancelled by user.'));
         }
       }
 
@@ -9056,7 +9243,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       try {
         await vscode.workspace.fs.stat(imageUri);
       } catch {
-        throw new Error(`Image not found: ${imagePath}`);
+        throw new Error(vscode.l10n.t('Image not found: {0}', imagePath));
       }
 
       // Copy original to backup (workspace-scoped; never write backups next to external files)
@@ -9114,7 +9301,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to resize image: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to resize image: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to resize image: {0}', errorMessage));
       webview.postMessage({
         type: 'imageResized',
         success: false,
@@ -9151,11 +9338,16 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       const allowedRoots = this.getAllowedFileRoots(document);
       if (!allowedRoots.some(root => isPathContainedWithin(absoluteImagePath, root))) {
         throw new Error(
-          `Refusing to undo resize for image outside the document/workspace: ${imagePath}`
+          vscode.l10n.t(
+            'Refusing to undo resize for image outside the document/workspace: {0}',
+            imagePath
+          )
         );
       }
       if (!allowedRoots.some(root => isPathContainedWithin(absoluteBackupPath, root))) {
-        throw new Error('Refusing to restore an image backup outside the document/workspace.');
+        throw new Error(
+          vscode.l10n.t('Refusing to restore an image backup outside the document/workspace.')
+        );
       }
 
       const imageUri = vscode.Uri.file(absoluteImagePath);
@@ -9165,7 +9357,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       try {
         await vscode.workspace.fs.stat(backupUri);
       } catch {
-        throw new Error(`Backup not found: ${backupPath}`);
+        throw new Error(vscode.l10n.t('Backup not found: {0}', backupPath));
       }
 
       // Restore from backup
@@ -9181,7 +9373,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to undo resize: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to undo resize: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to undo resize: {0}', errorMessage));
       webview.postMessage({
         type: 'imageUndoResized',
         success: false,
@@ -9219,7 +9411,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       const allowedRoots = this.getAllowedFileRoots(document);
       if (!allowedRoots.some(root => isPathContainedWithin(absolutePath, root))) {
         throw new Error(
-          `Refusing to redo resize for image outside the document/workspace: ${imagePath}`
+          vscode.l10n.t(
+            'Refusing to redo resize for image outside the document/workspace: {0}',
+            imagePath
+          )
         );
       }
 
@@ -9244,7 +9439,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to redo resize: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to redo resize: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to redo resize: {0}', errorMessage));
       webview.postMessage({
         type: 'imageRedoResized',
         success: false,
@@ -9261,7 +9456,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       hasSvgRootSignature(Buffer.from(originalData.subarray(0, 4096)).toString('utf8'))
     ) {
       throw new Error(
-        'SVG images must use Display size; raster resize would replace the vector file.'
+        vscode.l10n.t(
+          'SVG images must use Display size; raster resize would replace the vector file.'
+        )
       );
     }
   }
@@ -9358,7 +9555,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to open file: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to open file: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to open file: {0}', errorMessage));
     }
   }
 
@@ -9629,14 +9826,16 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       // on disk (e.g. ![](../../../../etc/hosts)) on a single user click.
       const allowedRoots = this.getAllowedFileRoots(document);
       if (!allowedRoots.some(root => isPathContainedWithin(absoluteOldPath, root))) {
-        throw new Error(`Refusing to rename image outside the document/workspace: ${oldPath}`);
+        throw new Error(
+          vscode.l10n.t('Refusing to rename image outside the document/workspace: {0}', oldPath)
+        );
       }
 
       // Check if old file exists
       try {
         await vscode.workspace.fs.stat(oldUri);
       } catch {
-        throw new Error(`Image not found: ${oldPath}`);
+        throw new Error(vscode.l10n.t('Image not found: {0}', oldPath));
       }
 
       // Build new filename for manual rename:
@@ -9653,7 +9852,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       // would otherwise escape via the dirname join above.
       if (!allowedRoots.some(root => isPathContainedWithin(absoluteNewPath, root))) {
         throw new Error(
-          `Refusing to rename image to a path outside the document/workspace: ${newFilename}`
+          vscode.l10n.t(
+            'Refusing to rename image to a path outside the document/workspace: {0}',
+            newFilename
+          )
         );
       }
 
@@ -9667,7 +9869,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       }
 
       if (targetExists && !allowOverwrite) {
-        throw new Error(`File already exists: ${newFilename}`);
+        throw new Error(vscode.l10n.t('File already exists: {0}', newFilename));
       }
 
       // Find all references if updating all files
@@ -9738,19 +9940,23 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
 
       if (failedFiles.length > 0) {
         vscode.window.showWarningMessage(
-          `Image renamed to ${newFilename}, but references could not be updated in: ${failedFiles.join(', ')}. Update those references manually.`
+          vscode.l10n.t(
+            'Image renamed to {0}, but references could not be updated in: {1}. Update those references manually.',
+            newFilename,
+            failedFiles.join(', ')
+          )
         );
       } else if (filesUpdated > 1) {
         vscode.window.showInformationMessage(
-          `Image renamed to ${newFilename} (updated ${filesUpdated} files)`
+          vscode.l10n.t('Image renamed to {0} (updated {1} files)', newFilename, filesUpdated)
         );
       } else {
-        vscode.window.showInformationMessage(`Image renamed to ${newFilename}`);
+        vscode.window.showInformationMessage(vscode.l10n.t('Image renamed to {0}', newFilename));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to rename image: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to rename image: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to rename image: {0}', errorMessage));
       webview.postMessage({
         type: 'imageRenamed',
         success: false,
@@ -9948,14 +10154,18 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         imagePath.startsWith('https://') ||
         imagePath.startsWith('data:')
       ) {
-        vscode.window.showErrorMessage('Cannot reveal external images in file manager');
+        vscode.window.showErrorMessage(
+          vscode.l10n.t('Cannot reveal external images in file manager')
+        );
         return;
       }
 
       // Resolve image path relative to document base path
       const basePath = this.getImageBasePath(document);
       if (!basePath) {
-        vscode.window.showErrorMessage('Cannot reveal image: no base directory available');
+        vscode.window.showErrorMessage(
+          vscode.l10n.t('Cannot reveal image: no base directory available')
+        );
         return;
       }
 
@@ -9968,7 +10178,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       const allowedRoots = this.getAllowedFileRoots(document);
       if (!allowedRoots.some(root => isPathContainedWithin(absolutePath, root))) {
         vscode.window.showErrorMessage(
-          `Refusing to reveal an image outside the document/workspace: ${imagePath}`
+          vscode.l10n.t(
+            'Refusing to reveal an image outside the document/workspace: {0}',
+            imagePath
+          )
         );
         return;
       }
@@ -9979,7 +10192,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       try {
         await vscode.workspace.fs.stat(fileUri);
       } catch {
-        vscode.window.showErrorMessage(`Image not found: ${imagePath}`);
+        vscode.window.showErrorMessage(vscode.l10n.t('Image not found: {0}', imagePath));
         return;
       }
 
@@ -9988,7 +10201,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to reveal image in OS: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to reveal image: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to reveal image: {0}', errorMessage));
     }
   }
 
@@ -10008,14 +10221,16 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         imagePath.startsWith('https://') ||
         imagePath.startsWith('data:')
       ) {
-        vscode.window.showErrorMessage('Cannot reveal external images in Explorer');
+        vscode.window.showErrorMessage(vscode.l10n.t('Cannot reveal external images in Explorer'));
         return;
       }
 
       // Resolve image path relative to document base path
       const basePath = this.getImageBasePath(document);
       if (!basePath) {
-        vscode.window.showErrorMessage('Cannot reveal image: no base directory available');
+        vscode.window.showErrorMessage(
+          vscode.l10n.t('Cannot reveal image: no base directory available')
+        );
         return;
       }
 
@@ -10027,7 +10242,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       const allowedRoots = this.getAllowedFileRoots(document);
       if (!allowedRoots.some(root => isPathContainedWithin(absolutePath, root))) {
         vscode.window.showErrorMessage(
-          `Refusing to reveal an image outside the document/workspace: ${imagePath}`
+          vscode.l10n.t(
+            'Refusing to reveal an image outside the document/workspace: {0}',
+            imagePath
+          )
         );
         return;
       }
@@ -10038,7 +10256,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       try {
         await vscode.workspace.fs.stat(fileUri);
       } catch {
-        vscode.window.showErrorMessage(`Image not found: ${imagePath}`);
+        vscode.window.showErrorMessage(vscode.l10n.t('Image not found: {0}', imagePath));
         return;
       }
 
@@ -10047,7 +10265,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to reveal image in Explorer: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to reveal image: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to reveal image: {0}', errorMessage));
     }
   }
 
@@ -10307,7 +10525,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('[MD4H] Failed to open external link:', errorMessage, error);
-      vscode.window.showErrorMessage(`Failed to open link: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to open link: {0}', errorMessage));
     }
   }
 
@@ -10337,7 +10555,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
 
     if (!baseDir) {
       console.error('[MD4H] Cannot resolve image path: no base directory');
-      vscode.window.showWarningMessage('Cannot resolve image path');
+      vscode.window.showWarningMessage(vscode.l10n.t('Cannot resolve image path'));
       return;
     }
 
@@ -10376,7 +10594,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (!fileExists) {
       const errorMsg = `Image not found: ${imagePath}`;
       console.error('[MD4H]', errorMsg);
-      vscode.window.showErrorMessage(errorMsg);
+      vscode.window.showErrorMessage(vscode.l10n.t('Image not found: {0}', imagePath));
       return;
     }
 
@@ -10387,7 +10605,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('[MD4H] Failed to open image:', errorMessage, err);
-      vscode.window.showErrorMessage(`Failed to open image: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to open image: {0}', errorMessage));
     }
   }
 
@@ -10434,7 +10652,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
 
       if (!fileExists) {
         // File not found, show error
-        vscode.window.showWarningMessage(`File not found: ${filePath}`);
+        vscode.window.showWarningMessage(vscode.l10n.t('File not found: {0}', filePath));
         console.warn('[MD4H] File not found:', filePath);
         return;
       }
@@ -10466,7 +10684,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           console.error('[MD4H] Failed to open image file:', errorMessage, error);
-          vscode.window.showErrorMessage(`Failed to open image file: ${errorMessage}`);
+          vscode.window.showErrorMessage(
+            vscode.l10n.t('Failed to open image file: {0}', errorMessage)
+          );
         }
       } else if (fileExtension === '.md' || fileExtension === '.markdown') {
         // A reader following a link between documents stays in this editor,
@@ -10494,7 +10714,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
               console.warn('[MD4H] Opened binary file using vscode.open command');
             } catch (fallbackError) {
               console.error('[MD4H] Failed to open file:', fallbackError);
-              vscode.window.showErrorMessage(`Failed to open file: ${errorMessage}`);
+              vscode.window.showErrorMessage(
+                vscode.l10n.t('Failed to open file: {0}', errorMessage)
+              );
             }
           } else {
             throw error;
@@ -10504,7 +10726,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('[MD4H] Failed to open file link:', errorMessage, error);
-      vscode.window.showErrorMessage(`Failed to open file: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to open file: {0}', errorMessage));
     }
   }
 
@@ -10529,7 +10751,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
 
       const saveBasePath = this.getImageStorageBasePath(document);
       if (!saveBasePath) {
-        const errorMessage = 'Cannot copy image: no base directory available';
+        const errorMessage = vscode.l10n.t('Cannot copy image: no base directory available');
         vscode.window.showErrorMessage(errorMessage);
         webview.postMessage({
           type: 'localImageCopyError',
@@ -10540,7 +10762,10 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       }
       const imagesDir = path.join(saveBasePath, targetFolder);
       if (!isPathContainedWithin(imagesDir, saveBasePath)) {
-        const errorMessage = `Refusing to copy image outside the base directory: ${targetFolder}`;
+        const errorMessage = vscode.l10n.t(
+          'Refusing to copy image outside the base directory: {0}',
+          targetFolder
+        );
         vscode.window.showErrorMessage(errorMessage);
         webview.postMessage({ type: 'localImageCopyError', placeholderId, error: errorMessage });
         return;
@@ -10585,7 +10810,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         }
         if (!foundAvailableName) {
           throw new Error(
-            `Cannot copy image: too many existing files matching "${baseFilename}-N${extension}"`
+            vscode.l10n.t(
+              'Cannot copy image: too many existing files matching "{0}-N{1}"',
+              baseFilename,
+              extension
+            )
           );
         }
       }
@@ -10612,7 +10841,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[MD4H] Failed to copy local image: ${errorMessage}`);
-      vscode.window.showErrorMessage(`Failed to copy image: ${errorMessage}`);
+      vscode.window.showErrorMessage(vscode.l10n.t('Failed to copy image: {0}', errorMessage));
       webview.postMessage({
         type: 'localImageCopyError',
         placeholderId,
@@ -10684,7 +10913,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     const now = Date.now();
     if (now - MarkdownEditorProvider.lastBlankLineSavePromptAt < 1000) return;
     MarkdownEditorProvider.lastBlankLineSavePromptAt = now;
-    void vscode.window.showInformationMessage('Save the file to see the changes.');
+    void vscode.window.showInformationMessage(vscode.l10n.t('Save the file to see the changes.'));
   }
 
   /**
@@ -11292,20 +11521,27 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       ))
     ) {
       console.error('[MD4H] Save skipped: the rich editor did not flush its latest changes');
+      const retry = vscode.l10n.t('Retry');
       const choice = await vscode.window.showErrorMessage(
-        'Not saved: the editor has changes that have not reached the file yet. Your changes are still in the editor.',
-        'Retry'
+        vscode.l10n.t(
+          'Not saved: the editor has changes that have not reached the file yet. Your changes are still in the editor.'
+        ),
+        retry
       );
-      if (choice === 'Retry') await this.executeSaveAfterDocumentEdits(document, webview);
+      if (choice === retry) await this.executeSaveAfterDocumentEdits(document, webview);
       return;
     }
     try {
       if (!(await document.save())) {
-        void vscode.window.showErrorMessage('VS Code could not save this Markdown document.');
+        void vscode.window.showErrorMessage(
+          vscode.l10n.t('VS Code could not save this Markdown document.')
+        );
       }
     } catch (error) {
       console.error('[MD4H] Document save failed:', error);
-      void vscode.window.showErrorMessage('VS Code could not save this Markdown document.');
+      void vscode.window.showErrorMessage(
+        vscode.l10n.t('VS Code could not save this Markdown document.')
+      );
     }
   }
 
@@ -11315,11 +11551,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
    */
   private async showDocumentSyncConflict(replacedContent: string): Promise<void> {
     try {
+      const openReplacedVersion = vscode.l10n.t('Open Replaced Version');
       const choice = await vscode.window.showWarningMessage(
-        'This file changed outside the rich editor while you were typing. Your typing was kept and replaced that change.',
-        'Open Replaced Version'
+        vscode.l10n.t(
+          'This file changed outside the rich editor while you were typing. Your typing was kept and replaced that change.'
+        ),
+        openReplacedVersion
       );
-      if (choice !== 'Open Replaced Version') return;
+      if (choice !== openReplacedVersion) return;
       const replaced = await vscode.workspace.openTextDocument({
         language: 'markdown',
         content: replacedContent,
@@ -11336,11 +11575,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
    */
   private async showDocumentSyncFailure(webview: vscode.Webview): Promise<void> {
     try {
+      const reloadEditor = vscode.l10n.t('Reload Editor');
       const choice = await vscode.window.showErrorMessage(
-        'The rich editor is out of sync with this file and its edits are not being saved. Reload the editor to show the file again.',
-        'Reload Editor'
+        vscode.l10n.t(
+          'The rich editor is out of sync with this file and its edits are not being saved. Reload the editor to show the file again.'
+        ),
+        reloadEditor
       );
-      if (choice !== 'Reload Editor') return;
+      if (choice !== reloadEditor) return;
       this.reloadOutOfSyncRenderer(webview);
     } catch (error) {
       console.error('[MD4H] Could not reload the out-of-sync rich editor:', error);
@@ -11408,7 +11650,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     if (result.status === 'completed') return result.value;
     if (result.status === 'coalesced') return true;
     if (result.status === 'failed') {
-      vscode.window.showErrorMessage('Failed to apply editor changes. Please try again.');
+      vscode.window.showErrorMessage(
+        vscode.l10n.t('Failed to apply editor changes. Please try again.')
+      );
       console.error('[MD4H] Coordinated applyEdit exception:', result.error);
     }
     return false;
@@ -11573,7 +11817,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     try {
       const success = await vscode.workspace.applyEdit(edit);
       if (!success) {
-        const errorMsg = 'Failed to save changes. The file may be read-only or locked.';
+        const errorMsg = vscode.l10n.t(
+          'Failed to save changes. The file may be read-only or locked.'
+        );
         vscode.window.showErrorMessage(errorMsg);
         console.error('[MD4H] applyEdit failed:', { uri: docUri });
       }
@@ -11581,8 +11827,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     } catch (error) {
       const errorMsg =
         error instanceof Error
-          ? `Failed to save changes: ${error.message}`
-          : 'Failed to save changes: Unknown error';
+          ? vscode.l10n.t('Failed to save changes: {0}', error.message)
+          : vscode.l10n.t('Failed to save changes: Unknown error');
       vscode.window.showErrorMessage(errorMsg);
       console.error('[MD4H] applyEdit exception:', error);
       return false;
@@ -11689,9 +11935,15 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     // Use a nonce for security
     const nonce = getNonce();
 
+    // Screen readers pick their voice from the document language. Without a
+    // loaded bundle the UI text is English whatever the display language is.
+    const documentLanguage = ((vscode.l10n.bundle && vscode.env.language) || 'en')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;');
+
     return /* html */ `
       <!DOCTYPE html>
-      <html lang="en">
+      <html lang="${documentLanguage}">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11707,7 +11959,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         <link href="${styleUri}" rel="stylesheet">
         <title>Markdown Editor for Humans</title>
       </head>
-      <body data-highlighting-worker-uri="${highlightingWorkerUri}">
+      <body data-highlighting-worker-uri="${highlightingWorkerUri}"${renderL10nBundleAttribute(vscode.l10n.bundle)}>
         <div id="editor"></div>
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>

@@ -70,6 +70,10 @@ import { scrollToHeading } from './utils/scrollToHeading';
 import { collectExportContent, getDocumentTitle } from './utils/exportContent';
 import { shouldOpenLinkFromClick } from './utils/linkClick';
 import { describeUncaughtError } from './utils/describeUncaughtError';
+import * as l10n from './l10n';
+import { escapeHtmlText } from '../shared/l10n';
+import { applyLocalizedCssText } from './utils/localizedCssText';
+import { applyTypographySettings } from './utils/typographyStyles';
 import {
   createFeedbackNodeViewInteractionGuards,
   createFeedbackReviewController,
@@ -598,7 +602,9 @@ function announcePeerFeedbackLock(): void {
   window.dispatchEvent(
     new CustomEvent('feedbackLocalError', {
       detail: {
-        message: 'Feedback is active in another editor split. Finish it there before editing here.',
+        message: l10n.t(
+          'Feedback is active in another editor split. Finish it there before editing here.'
+        ),
       },
     })
   );
@@ -734,7 +740,9 @@ window.setupImageResize = function (
     console.error('[MD4H] Failed to open image resize modal:', error);
     apiToUse.postMessage({
       type: 'showError',
-      message: 'Failed to open the image resize dialog. Please reload the editor and try again.',
+      message: l10n.t(
+        'Failed to open the image resize dialog. Please reload the editor and try again.'
+      ),
     });
   });
 };
@@ -1097,6 +1105,9 @@ function initializeEditor(initialContent: string) {
     // presentation coordinates after that exact document version initializes.
     restoreRichViewState(editorInstance);
 
+    // The placeholder and drop hint are drawn by CSS; hand it their translated text.
+    applyLocalizedCssText();
+
     // Create and insert formatting toolbar at top
     formattingToolbar = createFormattingToolbar(editorInstance);
     const editorContainer = document.querySelector('#editor') as HTMLElement;
@@ -1449,9 +1460,9 @@ function initializeEditor(initialContent: string) {
     if (editorElement) {
       editorElement.innerHTML = `
         <div style="color: red; padding: 20px; font-family: monospace;">
-          <h3>Error Loading Editor</h3>
-          <p>${error instanceof Error ? error.message : 'Unknown error'}</p>
-          <p>Please check the Debug Console for details.</p>
+          <h3>${l10n.html('Error Loading Editor')}</h3>
+          <p>${error instanceof Error ? escapeHtmlText(error.message) : l10n.html('Unknown error')}</p>
+          <p>${l10n.html('Please check the Debug Console for details.')}</p>
         </div>
       `;
     }
@@ -1694,8 +1705,8 @@ window.addEventListener('message', async (event: MessageEvent) => {
             void import('./features/auditOverlay').then(({ showToast }) => {
               showToast(
                 enableMath
-                  ? 'Math rendering enabled. Reopen this file to apply.'
-                  : 'Math rendering disabled. Reopen this file to apply.',
+                  ? l10n.t('Math rendering enabled. Reopen this file to apply.')
+                  : l10n.t('Math rendering disabled. Reopen this file to apply.'),
                 'info'
               );
             });
@@ -2602,15 +2613,15 @@ function showFeedbackMoreMenu(): void {
   const menu = document.createElement('div');
   menu.className = 'feedback-more-menu';
   menu.setAttribute('role', 'menu');
-  menu.setAttribute('aria-label', 'More feedback actions');
+  menu.setAttribute('aria-label', l10n.t('More feedback actions'));
   trigger?.setAttribute('aria-expanded', 'true');
   const actions: Array<{ label: string; action: () => void }> = [
     {
-      label: 'Reveal feedback file',
+      label: l10n.t('Reveal feedback file'),
       action: () => feedbackReviewController?.reveal(),
     },
     {
-      label: 'Copy diagnostics',
+      label: l10n.t('Copy diagnostics'),
       action: () => feedbackReviewController?.copyDiagnostics(),
     },
   ];
@@ -2738,7 +2749,7 @@ window.addEventListener('feedbackLocalError', event => {
   const detail = (event as CustomEvent<{ message?: string }>).detail;
   if (!detail?.message) return;
   void import('./features/auditOverlay').then(({ showToast }) => {
-    showToast(detail.message ?? 'Feedback action failed.', 'info', {
+    showToast(detail.message ?? l10n.t('Feedback action failed.'), 'info', {
       dedupeKey: 'feedback-local-error',
     });
   });
@@ -2759,7 +2770,7 @@ window.addEventListener('auditDocument', async () => {
     editor.view.dispatch(editor.state.tr.setMeta(auditPluginKey, []));
 
     // Show loading toast
-    const loadingToastId = showToast('Auditing document...', 'loading');
+    const loadingToastId = showToast(l10n.t('Auditing document...'), 'loading');
     loadingToast = { id: loadingToastId, dismiss: dismissToast };
 
     const auditEditor = editor;
@@ -2819,7 +2830,10 @@ window.addEventListener('insertMath', (event: Event) => {
   if (!enableMath) {
     void import('./features/auditOverlay').then(({ showToast }) => {
       showToast(
-        'Math rendering is disabled. Enable "markdownForHumans.enableMath" in settings.',
+        l10n.t(
+          'Math rendering is disabled. Enable "{0}" in settings.',
+          'markdownForHumans.enableMath'
+        ),
         'info'
       );
     });
@@ -2844,6 +2858,8 @@ window.addEventListener('openExtensionSettings', () => {
 // We use a CSS calc() expression so the override stays live — if the user later changes
 // their VS Code editor font size, --md-base-size-override recomputes automatically
 // instead of being locked to the pixel value captured at call time.
+// --md-editor-font-size is set only by the markdownForHumans.font.useEditorFont opt-in,
+// so zoom scales the same base size the stylesheet uses.
 function applyZoomLevel(percent: number) {
   const clamped = Math.max(50, Math.min(200, percent));
   if (clamped === 100) {
@@ -2851,7 +2867,7 @@ function applyZoomLevel(percent: number) {
   } else {
     document.documentElement.style.setProperty(
       '--md-base-size-override',
-      `calc(var(--vscode-editor-font-size, 14px) * ${clamped / 100})`
+      `calc(var(--md-editor-font-size, var(--vscode-editor-font-size, 14px)) * ${clamped / 100})`
     );
   }
 }
@@ -2894,8 +2910,10 @@ function shouldSuppressFormattingShortcut(
 }
 
 /**
- * Applies paragraph spacing and zoom settings from an incoming message.
- * Called from both the `update` and `settingsUpdate` handlers.
+ * Applies paragraph spacing, zoom and reader typography settings from an
+ * incoming message. Called from both the `update` and `settingsUpdate`
+ * handlers, so a configuration change applies without reopening the file.
+ * A message without a field leaves that setting as it is.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyEditorSettings(message: Record<string, any>) {
@@ -2913,6 +2931,9 @@ function applyEditorSettings(message: Record<string, any>) {
   }
   if (typeof message.zoom === 'number') {
     applyZoomLevel(message.zoom);
+  }
+  if (message.typography !== undefined) {
+    applyTypographySettings(document.documentElement, message.typography);
   }
   if (typeof message.formattingShortcutsEnabled === 'boolean') {
     formattingShortcutsEnabled = message.formattingShortcutsEnabled;
@@ -2945,7 +2966,7 @@ window.addEventListener('exportDocument', async (event: Event) => {
     console.error('[MD4H] Export failed:', error);
     vscode.postMessage({
       type: 'showError',
-      message: 'Failed to prepare document for export. See console for details.',
+      message: l10n.t('Failed to prepare document for export. See console for details.'),
     });
   }
 });

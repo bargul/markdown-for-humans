@@ -138,6 +138,10 @@ describe('Feedback commands during renderer startup', () => {
     await expect(sent).resolves.toBe(false);
     expect(f.postMessage).not.toHaveBeenCalled();
     expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(expect.stringMatching(/ready/i));
+    // A renderer that never booted will not load by waiting; name the action that recovers it.
+    expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+      expect.stringMatching(/reopen the editor/i)
+    );
     f.registration.dispose();
     expect(jest.getTimerCount()).toBe(0);
   });

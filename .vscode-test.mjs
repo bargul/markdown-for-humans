@@ -32,5 +32,8 @@ export default defineConfig({
   mocha: {
     ui: 'tdd',
     timeout: 60_000,
+    // Installs the webview service worker once, before any suite opens and
+    // closes editors in quick succession on the fresh profile.
+    require: ['./test/integration/support/warmWebviewRuntime.cjs'],
   },
 });

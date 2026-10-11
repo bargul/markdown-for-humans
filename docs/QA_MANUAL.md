@@ -423,7 +423,7 @@ This is **intentional, non-configurable behavior** — the editor's paste handli
 
 Open settings via:
 
-- Toolbar → “Export settings” (gear) or
+- Toolbar → “Extension settings” (gear) or
 - VS Code Settings search for “Markdown Editor for Humans”
 
 **Settings to verify**
