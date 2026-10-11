@@ -86,8 +86,10 @@ describe('marketplace listing policy', () => {
     expect(offenders).toEqual([]);
   });
 
-  test('keeps a short description that leads with the WYSIWYG editor and viewer phrases', () => {
-    expect(manifest.description.startsWith('WYSIWYG Markdown editor and viewer')).toBe(true);
+  test('keeps a short description that leads with the WYSIWYG editor phrase and names AI review', () => {
+    expect(manifest.description.startsWith('WYSIWYG Markdown editor')).toBe(true);
+    // The claim that sets the listing apart; "viewer" stays covered by the keywords.
+    expect(manifest.description).toContain('AI review comments');
     // Search cards show about three lines; ranking listings use 30 to 110 characters.
     expect(manifest.description.length).toBeLessThanOrEqual(120);
     // The extension also ships to Open VSX editors such as Cursor and Devin Desktop.
