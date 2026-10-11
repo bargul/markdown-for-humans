@@ -130,7 +130,7 @@ Never translate, and why:
 
 **Behavior rules:**
 
-- Lookup is by exact VS Code locale id (`zh-cn`, `pt-br`, `de`). VS Code does not fall back from a regional locale to a base language [S9].
+- Lookup is by the display language VS Code resolved (`zh-cn`, `pt-br`, `de`). VS Code maps a regional locale to an installed Language Pack by dropping the region, then loads exactly `bundle.l10n.<that id>.json`; there is no further fallback between bundles [S9].
 - A changed English sentence loses its translation until re-translated, and shows English meanwhile.
 - Keyboard shortcut names (`Ctrl`, `Shift`, `Enter`, `Escape`) stay as printed on the key.
 - Product and format names stay untranslated: Mermaid, Markdown, LaTeX, KaTeX, PDF, Word, Chrome, language names in the code block menu.
@@ -243,7 +243,7 @@ Alternatives rejected:
 - **Not answered by any documentation:** whether a placeholder `displayName` changes ranking. The packaging code says the indexed text is identical, but a known bug turns the comment form of an `nls` value into `[object Object]` in the listing [S16].
 - **Decision: keep `displayName` and `description` literal.** Translating them gains nothing, and the policy test and the recent rename depend on the literals.
 - **Open VSX:** `ovsx` packages with `vsce` [S17], and the registry treats `extension.vsixmanifest` as the source of truth [S18], so it sees the same resolved English text.
-- **VSCodium and Cursor:** the official Simplified Chinese Language Pack is on Open VSX (namespace `MS-CEINTL`, published by the Open VSX account, version 1.131.0) [S15]. Extension bundles load through the same `vscode.l10n` code path in any Code OSS build [S9]. For Cursor only community sources exist: display language comes from `locale` in `~/.cursor/argv.json`, and language packs work for the Code OSS parts [S19]. Not tested in Cursor, VSCodium or Windsurf.
+- **VSCodium and Cursor:** the official Simplified Chinese Language Pack is on Open VSX (namespace `MS-CEINTL`, published by the Open VSX account, version 1.131.0) [S15]. Extension bundles load through the same `vscode.l10n` code path in any Code OSS build [S9]. **Cursor 3.24.12 (Code OSS 1.128.0) is verified on this branch**: its marketplace installed the pack and the proof of concept rendered in Chinese (section 7). VSCodium and Windsurf are not tested.
 
 ### 5.6 Translator workflow and review
 
@@ -336,7 +336,8 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
   - [ ] `"l10n": "./l10n"` in `package.json`; drop or complete the sample bundle first
   - [ ] Translator comment overload; markup check; `l10n:extract` script; locale status list
   - [ ] `lang` attribute from `vscode.env.language`
-  - [ ] Real host check on 1.98.0 and stable with a pseudo-locale
+  - [x] Real host check of the delivery path on 1.98.0, 1.141.0 and Cursor (section 7)
+  - [ ] Pseudo-locale bundle for coverage checks
 - [ ] **Phase 1: Manifest**
 - [ ] **Phase 2: Host messages**
 - [ ] **Phase 3: Webview areas**, one pull request per area (3a to 3e)
@@ -346,7 +347,8 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
   - [x] Host-to-webview delivery through the real provider HTML
   - [x] Bundle guard (extraction, stale keys, placeholders)
   - [ ] Pseudo-locale coverage per converted area
-  - [ ] Real VS Code host: display language `zh-cn` with the Language Pack, light and dark, long-text layout
+  - [x] Real VS Code host, automated: display language `zh-cn` with the Language Pack, strings read back from the live webview
+  - [ ] Real VS Code host, visual: light and dark, long-text layout (needs converted surfaces first)
 
 ---
 
@@ -361,7 +363,29 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
   - The slice is inert in a real install: `package.json` has no `"l10n"` field, so VS Code loads no bundle and the product stays English. This was deliberate; three other branches are editing `package.json`.
   - The `zh-cn` bundle is sample text, not reviewed by a native speaker. It leaves "Close search" untranslated on purpose to prove the fallback.
   - `@vscode/l10n-dev` 0.0.35 was run from a scratch folder, not installed. It found the host call and none of the webview calls.
-  - Not done: a check in a real VS Code Extension Development Host. This session was told not to launch VS Code. The `<body>` attribute path is covered only by Jest with jsdom.
+  - The first version of this plan listed the real-host check as not done. It was done later the same day; see the next entry.
+
+### 2026-10-11 - Real host verification (VS Code 1.141.0, VS Code 1.98.0, Cursor)
+
+- **What:** Ran the proof of concept in real Extension Development Hosts after the owner allowed launching VS Code and Cursor.
+- **How:** `@vscode/test-electron` with an isolated profile per host; the official `MS-CEINTL.vscode-language-pack-zh-hans` installed into that profile; `--locale=zh-cn`. Temporary, uncommitted changes: `"l10n": "./l10n"` in `package.json` and a probe that opened the search overlay in the live webview, read its DOM and posted the values to the host. All of it was reverted and the profiles deleted. Harness and patch: `l10n-scoping/real-host-harness/` in the shared session notes.
+- **Not computer use:** another session's QA host was running, and computer use sees one VS Code process only. The values below come from the real webview DOM, not from a screenshot.
+
+| Host | `vscode.env.language` | Bundle keys loaded | Host notification | Webview placeholder | Counter | Untranslated string |
+| ---- | --------------------- | -----------------: | ----------------- | ------------------- | ------- | ------------------- |
+| VS Code 1.141.0, `zh-cn` | `zh-cn` | 11 | 没有打开的 Markdown 文档 | 在文档中查找... | 第 1 项，共 16 项 / 无结果 | Close search (English, as designed) |
+| VS Code 1.141.0, no locale | `en` | 0 | No markdown document open | Find in document... | 1 of 16 / No results | n/a |
+| VS Code 1.98.0, `zh-cn` | `zh-cn` | 11 | 没有打开的 Markdown 文档 | 在文档中查找... | 第 1 项，共 16 项 / 无结果 | Close search |
+| Cursor 3.24.12 (Code OSS 1.128.0), `zh-cn` | `zh-cn` | 11 | 没有打开的 Markdown 文档 | 在文档中查找... | 第 1 项，共 16 项 / 无结果 | Close search |
+
+- **Confirmed:**
+  - `vscode.l10n.bundle` and `.uri` are populated from `l10n/bundle.l10n.zh-cn.json` at the 1.98.0 floor and on current stable.
+  - The `<body data-l10n-bundle>` attribute reaches the webview (354 characters for the sample) and is parsed under the unchanged Content Security Policy (`default-src 'none'`, nonce-only `script-src`).
+  - In English the attribute is absent and every string is the English source.
+  - The toolbar still renders its 26 buttons in every run.
+- **Learned:**
+  - The first launch after installing a Language Pack from the command line comes up in English. VS Code writes `languagepacks.json` during that launch; the second launch is translated. A CI job for this must launch twice or pre-seed that file.
+  - Cursor's marketplace served the Microsoft Language Pack (version 1.128.0) and Cursor honored `--locale`.
 
 ---
 
@@ -388,14 +412,15 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
 | Bad or hostile translation merged | Low | Medium | Markup check, back-translation review, second native reviewer |
 | Translated text breaks layout | Medium | Medium | Pseudo-locale and real host pass per area; as a rule of thumb German text runs about a third longer than English |
 | Markup injection through a translation | Low | High | Escape translated values in the 31 HTML templates; reject `<` and `>` in CI |
-| Works in VS Code, not in Cursor or VSCodium | Unknown | Low | Same Code OSS code path; falls back to English if a host differs. Manual check before announcing |
+| Works in VS Code, not in a fork | Low for Cursor (verified), unknown for VSCodium and Windsurf | Low | Same Code OSS code path; falls back to English if a host differs. Manual check before announcing |
 
 ### Could not verify
 
 - Whether a placeholder `displayName` or `description` affects Marketplace ranking. No documentation covers it.
 - The minimum VS Code version for `package.nls.json`. The docs give none; it predates 1.73.
-- Behavior in Cursor, VSCodium and Windsurf. Community sources only [S19].
-- The delivery path in a real VS Code host (see the log).
+- Behavior in VSCodium and Windsurf. Cursor is verified.
+- Manifest translation (`package.nls.<locale>.json`) in a real host. No such file exists yet, so only the code path was exercised.
+- Visual layout with translated text. The real-host check read strings back from the DOM; nobody looked at the screen.
 - Whether any webview Feedback label is also written into the sealed bundle.
 - The search weighting claims come from maintainer comments in 2018 and 2022 issues and may have changed.
 
