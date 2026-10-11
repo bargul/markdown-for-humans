@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- The "Feedback is not ready" warning says to reopen the editor if it stays blank. It only said to wait for the editor to load, which does not help when the editor never finished starting.
+
 ---
 
 ## [0.4.4] - 2026-10-11
