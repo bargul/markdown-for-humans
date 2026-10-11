@@ -291,7 +291,7 @@ export function clearToasts(): void {
 export function showAuditOverlay(editor: Editor, issues: AuditIssue[]) {
   if (issues.length === 0) {
     // Show toast instead of panel for no issues
-    showToast(l10n.t('Your document is healthy — no issues found!'), 'success');
+    showToast(l10n.t('Your document is healthy: no issues found!'), 'success');
     return;
   }
 
@@ -430,13 +430,13 @@ function buildIssueItem(issue: AuditIssue): HTMLElement {
     const distance = getLevenshteinDistance(targetSlug, bestMatch);
 
     if (distance === 1) {
-      hintEl.textContent = l10n.t('Heading name changed slightly — pick the updated one:');
+      hintEl.textContent = l10n.t('Heading name changed slightly. Pick the updated one:');
     } else if (distance <= 3) {
-      hintEl.textContent = l10n.t('Seems these headings were renamed — pick the updated one:');
+      hintEl.textContent = l10n.t('Seems these headings were renamed. Pick the updated one:');
     } else if (issue.suggestions.length === 1) {
-      hintEl.textContent = l10n.t('Found a similar heading — is this what you meant?');
+      hintEl.textContent = l10n.t('Found a similar heading. Is this what you meant?');
     } else {
-      hintEl.textContent = l10n.t('Multiple similar headings found — pick the correct one:');
+      hintEl.textContent = l10n.t('Multiple similar headings found. Pick the correct one:');
     }
 
     actionEl.appendChild(hintEl);

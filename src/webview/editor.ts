@@ -71,6 +71,7 @@ import { collectExportContent, getDocumentTitle } from './utils/exportContent';
 import { shouldOpenLinkFromClick } from './utils/linkClick';
 import { describeUncaughtError } from './utils/describeUncaughtError';
 import * as l10n from './l10n';
+import { escapeHtmlText } from '../shared/l10n';
 import {
   createFeedbackNodeViewInteractionGuards,
   createFeedbackReviewController,
@@ -1454,7 +1455,7 @@ function initializeEditor(initialContent: string) {
       editorElement.innerHTML = `
         <div style="color: red; padding: 20px; font-family: monospace;">
           <h3>${l10n.html('Error Loading Editor')}</h3>
-          <p>${error instanceof Error ? error.message : l10n.html('Unknown error')}</p>
+          <p>${error instanceof Error ? escapeHtmlText(error.message) : l10n.html('Unknown error')}</p>
           <p>${l10n.html('Please check the Debug Console for details.')}</p>
         </div>
       `;

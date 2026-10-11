@@ -582,7 +582,6 @@ describe('Audit Overlay UI', () => {
 
   describe('localization', () => {
     // Leaves out "Fix" on purpose, to exercise the fallback to English.
-    // \u2014 stands for the em dash used in the English source text.
     const sampleBundle: Record<string, string> = {
       'Document Audit ({0} issue)': '文档审核（{0} 项问题）',
       'Document Audit ({0} issues)': '文档审核（共 {0} 项问题）',
@@ -593,9 +592,9 @@ describe('Audit Overlay UI', () => {
       'Browse…': '浏览…',
       'Open file picker to select the correct file': '打开文件选择器以选择正确的文件',
       'Waiting…': '等待中…',
-      'Heading name changed slightly \u2014 pick the updated one:':
+      'Heading name changed slightly. Pick the updated one:':
         '标题名称略有变化，请选择更新后的标题：',
-      'Your document is healthy \u2014 no issues found!': '文档状态良好，未发现问题！',
+      'Your document is healthy: no issues found!': '文档状态良好，未发现问题！',
       'All fixed! 🎉': '全部修复！🎉',
       Preview: '预览',
       'File preview': '文件预览',

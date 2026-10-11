@@ -390,7 +390,7 @@ export async function showMathEditor(options: MathEditOptions): Promise<MathEdit
         errorBox.style.display = 'none';
         errorBox.textContent = '';
       } catch (err) {
-        previewBox.innerHTML = `<span style="color: var(--vscode-descriptionForeground); font-style: italic;">${l10n.html('Preview unavailable — see error below.')}</span>`;
+        previewBox.innerHTML = `<span style="color: var(--vscode-descriptionForeground); font-style: italic;">${l10n.html('Preview unavailable. See error below.')}</span>`;
         const message = err instanceof Error ? err.message : l10n.t('KaTeX render error');
         errorBox.style.display = 'block';
         errorBox.textContent = message;
