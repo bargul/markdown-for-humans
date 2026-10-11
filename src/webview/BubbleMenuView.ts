@@ -599,6 +599,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         ['HTML', 'html'],
         ['SQL', 'sql'],
         ['Java', 'java'],
+        ['C#', 'csharp'],
         ['Go', 'go'],
         ['Rust', 'rust'],
         ['ABAP', 'abap'],
