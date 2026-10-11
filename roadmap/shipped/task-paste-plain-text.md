@@ -4,10 +4,10 @@
 
 - **Task name:** Paste as plain text (Ctrl/Cmd+Shift+V)
 - **Slug:** paste-plain-text
-- **Status:** in-progress
+- **Status:** shipped
 - **Created:** 2026-10-11
 - **Last updated:** 2026-10-11
-- **Shipped:** _(pending)_
+- **Shipped:** 2026-10-12 (0.4.4)
 - **Issue:** #11
 
 ---
