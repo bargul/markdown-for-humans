@@ -145,6 +145,7 @@ TipTap supplies the editor framework, not document authority. Custom extensions 
 | `modern-screenshot@4.7.0`                     | Rasterize bounded Feedback DOM clones.                                        |
 | `markdown-it@^14.0.0`                         | Parse saved source for exact Feedback line mapping and semantic verification. |
 | `highlight.js@^11.11.1` and `lowlight@^2.9.0` | Code-block highlighting.                                                      |
+| `highlightjs-sap-abap@^0.3.0`               | ABAP grammar for code-block highlighting (community grammar, not in highlight.js core). |
 | `katex@^0.16.9`                               | Inline and display math rendering.                                            |
 | `esbuild@^0.28.2`                             | Produce extension-host and browser bundles.                                   |
 

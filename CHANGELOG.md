@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **ABAP syntax highlighting for code blocks.** ` ```abap ` fences are highlighted (keywords, strings, comments), and ABAP is available in the code block language menu. `sap-abap` works as a fence alias. The grammar comes from the community `highlightjs-sap-abap` package, since highlight.js itself ships no ABAP grammar.
+
 ---
 
 ## [0.4.3] - 2026-10-10

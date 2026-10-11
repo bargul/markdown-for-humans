@@ -7,9 +7,10 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   // Marked 17 is ESM-only. Transform only its single runtime entry point so
   // @tiptap/markdown's CommonJS test build can load it without widening the
-  // node_modules transform surface.
+  // node_modules transform surface. Patterns are separator-agnostic so they
+  // match Windows backslash paths as well as POSIX paths.
   transform: {
-    'node_modules/marked/lib/marked\\.esm\\.js$': [
+    '[/\\\\]marked[/\\\\]lib[/\\\\]marked\\.esm\\.js$': [
       'babel-jest',
       {
         babelrc: false,
@@ -18,7 +19,9 @@ module.exports = {
       },
     ],
   },
-  transformIgnorePatterns: ['/node_modules/(?!marked/lib/marked\\.esm\\.js$)'],
+  transformIgnorePatterns: [
+    '[/\\\\]node_modules[/\\\\](?!marked[/\\\\]lib[/\\\\]marked\\.esm\\.js$)',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

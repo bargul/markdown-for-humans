@@ -46,6 +46,35 @@ describe('worker tokenizer with real grammar runtime', () => {
       expect(sample.classes).toBe(true);
     }
   });
+  it('highlights ABAP keywords, strings and comments with standard hljs scopes', () => {
+    const source =
+      "* leading comment\nREPORT z_demo.\nDATA: lv_name TYPE string.\nlv_name = 'hello'.\nWRITE: / lv_name.";
+    const result = probe(`
+      import {tokenizeCode} from './src/webview/highlighting/tokenize';
+      const source=${JSON.stringify(source)};
+      const result=tokenizeCode('abap',source);
+      const alias=tokenizeCode('sap-abap',source);
+      console.log(JSON.stringify({reason:result.reason,aliasReason:alias.reason,nonempty:result.spans.length>0,aliasNonempty:alias.spans.length>0,valid:result.spans.every(s=>s.from>=0&&s.to<=source.length&&s.from<s.to),classes:result.spans.every(s=>s.classes.split(' ').every(c=>/^(hljs-[a-z0-9_-]+|[a-z]+_+|language-[a-z0-9_-]+|javascript|css|xml|php|python)$/.test(c))),kinds:Array.from(new Set(result.spans.map(s=>s.classes)))}));
+    `) as {
+      reason?: string;
+      aliasReason?: string;
+      nonempty: boolean;
+      aliasNonempty: boolean;
+      valid: boolean;
+      classes: boolean;
+      kinds: string[];
+    };
+    expect(result.reason).toBeUndefined();
+    expect(result.aliasReason).toBeUndefined();
+    expect(result.nonempty).toBe(true);
+    expect(result.aliasNonempty).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.classes).toBe(true);
+    const joined = result.kinds.join(' ');
+    expect(joined).toContain('hljs-comment');
+    expect(joined).toContain('hljs-keyword');
+    expect(joined).toContain('hljs-string');
+  });
   it('never guesses languages, enforces source limits and validates AST text', () => {
     const result = probe(`
       import {tokenizeCode,spansFromHighlightTree} from './src/webview/highlighting/tokenize';

@@ -2,10 +2,13 @@
  * Copyright (c) 2025-2026 Concret.io
  * Licensed under the MIT License. See LICENSE in the project root.
  * Lightweight snapshot of Lowlight 2.9 common grammars plus the editor's existing
- * highlight.js 11.12 overrides. No grammar code belongs on the typing thread.
+ * highlight.js 11.12 overrides and the community ABAP grammar (highlightjs-sap-abap).
+ * No grammar code belongs on the typing thread.
  */
 
 const GRAMMAR_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  abap: 'abap',
+  'sap-abap': 'abap',
   arduino: 'arduino',
   ino: 'arduino',
   bash: 'bash',
