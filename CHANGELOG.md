@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Font and readability settings.** Choose the font you read best in, for example a font designed for dyslexia or low vision. `markdownForHumans.font.family` takes any font installed on your computer, and `font.weight`, `font.lineHeight`, `font.letterSpacing` and `font.wordSpacing` adjust body text. Changes apply at once to every open editor. Code stays monospace, and math and diagrams keep their own fonts. `markdownForHumans.font.useEditorFont` uses your VS Code editor font instead, including `"[markdown]"` overrides of `editor.fontFamily`, `editor.fontWeight` and `editor.fontSize`. Nothing changes until you set one of these, and PDF and Word exports keep their own fonts.
+
 ---
 
 ## [0.4.4] - 2026-10-11
@@ -15,7 +19,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - **ABAP syntax highlighting for code blocks.** ` ```abap ` fences are highlighted (keywords, strings, comments), and ABAP is available in the code block language menu. `sap-abap` works as a fence alias. The grammar comes from the community `highlightjs-sap-abap` package, since highlight.js itself ships no ABAP grammar.
-- **Font and readability settings.** Choose the font you read best in, for example a font designed for dyslexia or low vision. `markdownForHumans.font.family` takes any font installed on your computer, and `font.weight`, `font.lineHeight`, `font.letterSpacing` and `font.wordSpacing` adjust body text. Changes apply at once to every open editor. Code stays monospace, and math and diagrams keep their own fonts. `markdownForHumans.font.useEditorFont` uses your VS Code editor font instead, including `"[markdown]"` overrides of `editor.fontFamily`, `editor.fontWeight` and `editor.fontSize`. Nothing changes until you set one of these, and PDF and Word exports keep their own fonts.
 
 ### Fixed
 

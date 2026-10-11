@@ -203,6 +203,11 @@
 - **What:** A first version of the host test wrote a `"[markdown]"` override with `WorkspaceConfiguration.update` and restored it. On VS Code 1.141.0 and 1.98.0 the scoped read returned the override, the unscoped read did not, and `affectsConfiguration('editor.fontFamily', { languageId: 'markdown' })` was true for the change. The committed test reads the same override from a static fixture workspace setting instead, so the suite stays read-only.
 - **Existing flake, measured:** On VS Code 1.98.0 on this machine (macOS, Apple silicon) the existing test `SVG image integrity > preserves SVG files and sized image source through splits, reopen, and live Feedback` fails intermittently with `Feedback command must reach the ready, active SVG editor` after a 10 second wait. Interleaved runs on 2026-10-11: an untouched copy of `origin/main` (adcd006) failed 6 of 10; this branch failed 2 of 10. It is the first webview the suite opens on `origin/main`. No failure was seen on 1.141.0 (7 of 7 runs green on this branch).
 - **Correction:** An earlier reading of five green baseline runs blamed the runtime settings write. The 20 run comparison does not support that; the flake exists without this change.
+### 2026-10-11 - Brought up to date with main (0.4.4)
+
+- **What:** `origin/main` gained PRs 149, 150 and 151 (release 0.4.4) during this work. Merged it into the branch. The merge was clean, but it placed the changelog entry inside the released `[0.4.4]` section; moved it to `[Unreleased]`.
+- **Results on the merged tree:** `npm run lint` clean. `npx jest`: 219 suites passed, 1 skipped; 4509 tests passed, 27 skipped, 121 todo. Performance gates 7 of 7 and `"passed": true`. `npm run test:integration`: 10 passing on VS Code 1.141.0.
+- **Notes:** This feature is not part of 0.4.4. It needs its own version bump when released.
 
 ---
 
