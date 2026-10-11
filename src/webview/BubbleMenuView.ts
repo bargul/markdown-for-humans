@@ -720,6 +720,17 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       className: 'copy-button',
     },
     {
+      type: 'button',
+      label: 'Copy AI reference',
+      title: 'Copy reference for AI (@file#L10-14)',
+      icon: { name: 'mention', fallback: '@' },
+      action: () => {
+        window.dispatchEvent(new CustomEvent('copyReferenceForAi'));
+      },
+      isActive: () => false,
+      className: 'copy-reference-button',
+    },
+    {
       type: 'dropdown',
       label: 'Export',
       title: 'Export document',
