@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 
 - Feedback starts on a document that has link reference definitions (`[label]: https://...`), such as a changelog with version links at the end. It refused to start with "Feedback could not match this document to the saved file". A comment on a definition points at that definition's own line.
+- A link reference definition that repeats a label (`[a]: ...` twice, or `[docs]` and `[DOCS]`) is no longer deleted when the file is saved after an edit. Links still use the first definition.
 
 ---
 
