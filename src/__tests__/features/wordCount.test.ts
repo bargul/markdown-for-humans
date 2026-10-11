@@ -399,6 +399,16 @@ describe('WordCountFeature', () => {
       expect(window.showInformationMessage).toHaveBeenCalledWith('No markdown document open');
     });
 
+    it('should show the translated message when VS Code has one', () => {
+      window.activeTextEditor = undefined;
+      (vscode.l10n.t as jest.Mock).mockReturnValueOnce('没有打开的 Markdown 文档');
+
+      feature.showDetailedStats();
+
+      expect(vscode.l10n.t).toHaveBeenCalledWith('No markdown document open');
+      expect(window.showInformationMessage).toHaveBeenCalledWith('没有打开的 Markdown 文档');
+    });
+
     it('should show stats for markdown document', () => {
       const doc = createMockTextDocument('Hello world test', 'markdown');
       window.activeTextEditor = createMockTextEditor(doc);

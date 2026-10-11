@@ -1,0 +1,13 @@
+{
+  "Close (Escape)": "关闭 (Escape)",
+  "Find in document": "在文档中查找",
+  "Find in document...": "在文档中查找...",
+  "Next match": "下一个匹配项",
+  "Next match (Enter)": "下一个匹配项 (Enter)",
+  "No markdown document open": "没有打开的 Markdown 文档",
+  "No results": "无结果",
+  "Previous match": "上一个匹配项",
+  "Previous match (Shift+Enter)": "上一个匹配项 (Shift+Enter)",
+  "Search query": "搜索内容",
+  "{0} of {1}": "第 {0} 项，共 {1} 项"
+}

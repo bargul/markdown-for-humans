@@ -113,6 +113,17 @@ export const env = {
   openExternal: jest.fn(),
 };
 
+// Mock l10n API: English, as when VS Code has loaded no bundle
+export const l10n = {
+  t: jest.fn((message: string, ...args: Array<string | number | boolean>) =>
+    message.replace(/\{(\d+)\}/g, (placeholder, index: string) =>
+      args[Number(index)] === undefined ? placeholder : String(args[Number(index)])
+    )
+  ),
+  bundle: undefined as Record<string, string> | undefined,
+  uri: undefined,
+};
+
 // Mock ConfigurationTarget enum
 export enum ConfigurationTarget {
   Global = 1,
@@ -221,6 +232,7 @@ export default {
   window,
   workspace,
   commands,
+  l10n,
   Uri,
   StatusBarAlignment,
   ProgressLocation,

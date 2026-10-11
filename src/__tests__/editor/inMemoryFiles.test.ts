@@ -36,6 +36,7 @@ jest.mock('vscode', () => ({
     executeCommand: jest.fn(),
     registerCommand: jest.fn(() => ({ dispose: jest.fn() })),
   },
+  l10n: { bundle: undefined },
   window: {
     showInformationMessage: jest.fn(),
     showErrorMessage: jest.fn(),

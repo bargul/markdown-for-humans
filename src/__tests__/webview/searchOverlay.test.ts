@@ -61,6 +61,7 @@ import {
   hideSearchOverlay,
   isSearchVisible,
 } from '../../webview/features/searchOverlay';
+import * as l10n from '../../webview/l10n';
 
 type MockEditor = {
   view: {
@@ -540,6 +541,74 @@ describe('Search Overlay UI behaviors', () => {
     expect(editor.commands.focus).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(button);
     expect(document.querySelector('.search-overlay.visible')).toBeNull();
+  });
+});
+
+describe('Search Overlay localization', () => {
+  // Sample text only: not reviewed by a native speaker.
+  const sampleBundle = JSON.parse(
+    readFileSync(path.resolve(__dirname, '../../../l10n/bundle.l10n.zh-cn.json'), 'utf8')
+  ) as Record<string, string>;
+  let editor: MockEditor;
+
+  const search = (query: string): string => {
+    const input = document.querySelector('.search-overlay-input') as HTMLInputElement;
+    input.value = query;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return document.querySelector('.search-overlay-counter')?.textContent ?? '';
+  };
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    window.scrollTo = jest.fn();
+    setWindowScrollPosition(0, 0);
+    editor = createMockEditorWithView('hello hello');
+  });
+
+  afterEach(() => {
+    hideSearchOverlay(editor as unknown as Editor, false);
+    l10n.resetL10n();
+  });
+
+  it('shows English when no bundle is loaded', () => {
+    showSearchOverlay(editor as unknown as Editor);
+
+    const input = document.querySelector('.search-overlay-input') as HTMLInputElement;
+    expect(document.querySelector('.search-overlay')?.getAttribute('aria-label')).toBe(
+      'Find in document'
+    );
+    expect(input.placeholder).toBe('Find in document...');
+    expect(search('hello')).toBe('1 of 2');
+    expect(search('zzz')).toBe('No results');
+  });
+
+  it('shows the translated labels, tooltips and counter', () => {
+    l10n.configureL10n(sampleBundle);
+    showSearchOverlay(editor as unknown as Editor);
+
+    const input = document.querySelector('.search-overlay-input') as HTMLInputElement;
+    const [previous, next] = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.search-overlay-btn')
+    );
+    expect(document.querySelector('.search-overlay')?.getAttribute('aria-label')).toBe(
+      '在文档中查找'
+    );
+    expect(input.placeholder).toBe('在文档中查找...');
+    expect(input.getAttribute('aria-label')).toBe('搜索内容');
+    expect(previous.title).toBe('上一个匹配项 (Shift+Enter)');
+    expect(previous.getAttribute('aria-label')).toBe('上一个匹配项');
+    expect(next.title).toBe('下一个匹配项 (Enter)');
+    expect(search('hello')).toBe('第 1 项，共 2 项');
+    expect(search('zzz')).toBe('无结果');
+  });
+
+  it('falls back to English for a string the bundle does not translate', () => {
+    l10n.configureL10n(sampleBundle);
+    showSearchOverlay(editor as unknown as Editor);
+
+    const close = document.querySelector('.search-overlay-close') as HTMLButtonElement;
+    expect(close.title).toBe('关闭 (Escape)');
+    expect(close.getAttribute('aria-label')).toBe('Close search');
   });
 });
 

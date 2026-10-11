@@ -39,6 +39,7 @@ import {
 } from '../shared/imageSource';
 import { findImageSourceReferences } from './imageSourceReferences';
 import { applyBlankLinePolicy, type BlankLineMode } from '../shared/blankLinePolicy';
+import { renderL10nBundleAttribute } from '../shared/l10n';
 import {
   FeedbackReportLockBusyError,
   FeedbackSessionError,
@@ -11641,7 +11642,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         <link href="${styleUri}" rel="stylesheet">
         <title>Markdown Editor for Humans</title>
       </head>
-      <body data-highlighting-worker-uri="${highlightingWorkerUri}">
+      <body data-highlighting-worker-uri="${highlightingWorkerUri}"${renderL10nBundleAttribute(vscode.l10n.bundle)}>
         <div id="editor"></div>
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>

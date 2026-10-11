@@ -188,7 +188,7 @@ export class WordCountFeature {
   showDetailedStats(): void {
     const document = this.getActiveMarkdownDocument();
     if (!document) {
-      vscode.window.showInformationMessage('No markdown document open');
+      vscode.window.showInformationMessage(vscode.l10n.t('No markdown document open'));
       return;
     }
 
