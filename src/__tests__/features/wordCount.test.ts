@@ -19,6 +19,7 @@ import {
   createMockTextDocument,
   createMockTextEditor,
   mockStatusBarItem,
+  Selection,
 } from '../../__mocks__/vscode';
 
 describe('calculateStats', () => {
@@ -429,5 +430,81 @@ describe('WordCountFeature', () => {
 
       expect(mockStatusBarItem.dispose).toHaveBeenCalled();
     });
+  });
+});
+
+describe('WordCountFeature localization', () => {
+  const translate = vscode.l10n.t as jest.Mock;
+  const englishTranslate = translate.getMockImplementation();
+  // Leaves out "Lines: {0}" on purpose, to exercise the fallback to English.
+  const sampleBundle: Record<string, string> = {
+    '{0} words': '{0} 个词',
+    '{0} words selected': '已选中 {0} 个词',
+    '{0} characters': '{0} 个字符',
+    '{0} characters (no spaces)': '{0} 个字符（不含空格）',
+    '{0} lines': '{0} 行',
+    '{0} paragraphs': '{0} 段',
+    '~{0} min read': '约 {0} 分钟阅读',
+    'Selected:\n{0}': '已选中：\n{0}',
+    '📊 Document Statistics': '📊 文档统计',
+    'Words: {0}': '词数：{0}',
+    'Characters: {0}': '字符数：{0}',
+    'Paragraphs: {0}': '段落数：{0}',
+    'Reading time: ~{0} min': '阅读时间：约 {0} 分钟',
+  };
+  let feature: WordCountFeature;
+  const mockContext = { subscriptions: { push: jest.fn() } } as unknown as vscode.ExtensionContext;
+
+  beforeEach(() => {
+    translate.mockImplementation((message: string, ...args: Array<string | number | boolean>) =>
+      (sampleBundle[message] ?? message).replace(/\{(\d+)\}/g, (placeholder, index: string) =>
+        args[Number(index)] === undefined ? placeholder : String(args[Number(index)])
+      )
+    );
+    feature = new WordCountFeature();
+  });
+
+  afterEach(() => {
+    feature.dispose();
+    translate.mockImplementation(englishTranslate);
+    window.activeTextEditor = undefined;
+  });
+
+  it('shows the translated count and tooltip, keeping the icon prefix', () => {
+    const doc = createMockTextDocument('Hello world foo bar', 'markdown');
+    window.activeTextEditor = createMockTextEditor(doc);
+
+    feature.activate(mockContext);
+
+    expect(mockStatusBarItem.text).toBe('$(pencil) 4 个词');
+    expect(mockStatusBarItem.tooltip).toContain('19 个字符');
+    expect(mockStatusBarItem.tooltip).toContain('约 1 分钟阅读');
+  });
+
+  it('shows the translated selection count and tooltip', () => {
+    const doc = createMockTextDocument('Hello world foo bar', 'markdown');
+    window.activeTextEditor = createMockTextEditor(
+      doc,
+      new Selection({ line: 0, character: 0 }, { line: 0, character: 5 })
+    );
+    feature.activate(mockContext);
+    const onSelectionChange = (window.onDidChangeTextEditorSelection as jest.Mock).mock
+      .calls[0][0] as () => void;
+
+    onSelectionChange();
+
+    expect(mockStatusBarItem.text).toBe('$(pencil) 已选中 4 个词');
+    expect(String(mockStatusBarItem.tooltip).startsWith('已选中：\n19 个字符')).toBe(true);
+  });
+
+  it('shows the translated detailed statistics', () => {
+    const doc = createMockTextDocument('Hello world test', 'markdown');
+    window.activeTextEditor = createMockTextEditor(doc);
+
+    feature.showDetailedStats();
+
+    expect(window.showInformationMessage).toHaveBeenCalledWith(
+      '📊 文档统计 | 词数：3 | 字符数：16 | Lines: 1 | 段落数：1 | 阅读时间：约 1 分钟'
+    );
   });
 });

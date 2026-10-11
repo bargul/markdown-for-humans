@@ -4,7 +4,7 @@
 
 - **Task name:** Localization (translation) support
 - **Slug:** localization
-- **Status:** planned (scoping done, proof of concept on branch `claude/l10n-scoping-d621b8`)
+- **Status:** in-progress (branch `claude/l10n-scoping-d621b8`)
 - **Created:** 2026-10-11
 - **Last updated:** 2026-10-11
 - **Shipped:** _(pending)_
@@ -386,6 +386,34 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
 - **Learned:**
   - The first launch after installing a Language Pack from the command line comes up in English. VS Code writes `languagepacks.json` during that launch; the second launch is translated. A CI job for this must launch twice or pre-seed that file.
   - Cursor's marketplace served the Microsoft Language Pack (version 1.128.0) and Cursor honored `--locale`.
+
+### 2026-10-11 - Owner decisions: full conversion, five languages
+
+- **Decision:** do the full conversion now (owner, in chat), not only Phase 0.
+- **Decision:** ship five languages: Simplified Chinese, Japanese, Spanish, Portuguese (Brazil), Russian.
+- **Why these five:** installs of VS Code's official Language Packs, read from the Marketplace and Open VSX public APIs on 2026-10-11. A user needs that pack for any extension translation to show. Counts are cumulative installs, not active users.
+
+| Rank | Language (locale id) | Marketplace installs | Share of all packs | Open VSX downloads |
+| ---: | -------------------- | -------------------: | -----------------: | -----------------: |
+| 1 | Chinese Simplified (`zh-cn`) | 56.1M | 39.5% | 3.65M |
+| 2 | Japanese (`ja`) | 15.7M | 11.0% | 1.49M |
+| 3 | Spanish (`es`) | 12.1M | 8.6% | 0.85M |
+| 4 | Portuguese Brazil (`pt-br`) | 9.7M | 6.8% | 0.62M |
+| 5 | Russian (`ru`) | 9.2M | 6.5% | 0.46M |
+| 6 | Korean (`ko`) | 7.2M | 5.0% | 0.60M |
+| 7 | French (`fr`) | 6.6M | 4.7% | 0.54M |
+| 8 | German (`de`) | 5.8M | 4.1% | 0.52M |
+
+- **Community signal:** of 37 issues, #55 asks for Simplified Chinese, #77 asks for "translation" without naming a language, and #4 contains Chinese sample text. Neither request has a reaction or a comment.
+- **Open risk the owner accepted:** only Chinese has a volunteer reviewer. The other four have none yet.
+
+### 2026-10-11 - Phase 0 done, conversion started
+
+- **Phase 0 (commit `ab1c71a`):** `"l10n": "./l10n"` in the manifest; translator comments (`{ message, comment }`); `l10n.html` for templates; extraction of singular and plural choices; `l10n/drafts/` for unfinished languages (not packaged) versus `l10n/` for complete ones; `npm run l10n:extract`; the rule in `AGENTS.md` and `vibe-coding-rules/localization.md`.
+- **Ratchet:** `src/__tests__/l10n/hardcodedText.test.ts` counts English text written straight into a UI sink. Start: 529 strings in 45 files. It may only go down, and a new file must have none. It sees direct sinks only, so zero is necessary, not sufficient.
+- **Found while converting:** `l10n.t` threw when a module was evaluated without a `document` (the highlighting worker, node-environment tests). It now returns English there; covered by `l10nWithoutDom.test.ts`.
+- **Issue #77:** Bold, Italic and Strikethrough keep their icon-font glyph unless a language supplies another letter (`B/Bold button letter` and so on); then the letter renders as text. `H1` to `H3` are translatable text.
+- **Order of work:** files that neither `main` nor the open feature branches touch first; `package.json` and `src/feedbackCommandReadiness.ts` after the next sync with `main`.
 
 ---
 

@@ -51,7 +51,10 @@ export function t(message: string, ...args: L10nArgument[]): string;
 export function t(options: L10nMessageOptions): string;
 export function t(message: string | L10nMessageOptions, ...args: L10nArgument[]): string {
   // Read lazily: the host renders the bundle on <body> before any UI is built.
-  bundle ??= parseL10nBundle(document.body?.getAttribute(L10N_BUNDLE_ATTRIBUTE));
+  // A worker has no document; text produced there stays English.
+  bundle ??= parseL10nBundle(
+    typeof document === 'undefined' ? undefined : document.body?.getAttribute(L10N_BUNDLE_ATTRIBUTE)
+  );
   if (typeof message === 'string') return formatL10n(bundle[message] || message, args);
   const translation = bundle[l10nKey(message.message, message.comment)];
   return formatL10n(translation || message.message, message.args ?? []);

@@ -67,6 +67,8 @@ describe('hardcoded UI text finder', () => {
         [
           "vscode.window.showErrorMessage(vscode.l10n.t('Failed to save image'));",
           "button.title = l10n.t('Copy code block');",
+          "toggle.textContent = l10n.t({ message: 'Compact', comment: 'Composer size' });",
+          "const item = { label: vscode.l10n.t({ message: 'Open file', comment: 'Verb' }) };",
           "dialog.innerHTML = `<h3>${l10n.html('Rename Image')}</h3>`;",
           "button.className = 'toolbar-button primary';",
           "input.setAttribute('aria-hidden', 'true');",

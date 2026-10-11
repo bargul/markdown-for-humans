@@ -83,6 +83,32 @@ describe('translation delivery to the webview', () => {
     expect(l10n.t('Close search')).toBe('Close search');
   });
 
+  it('declares the display language on the document once its translations are loaded', () => {
+    const env = vscode.env as unknown as { language?: string };
+    const originalLanguage = env.language;
+    const documentLanguage = (): string | null =>
+      new DOMParser()
+        .parseFromString(renderHtml(), 'text/html')
+        .documentElement.getAttribute('lang');
+    try {
+      // No bundle: the UI text is English, whatever the display language is.
+      env.language = 'zh-cn';
+      expect(documentLanguage()).toBe('en');
+
+      (vscode.l10n as unknown as MutableL10n).bundle = { 'No results': '无结果' };
+      expect(documentLanguage()).toBe('zh-cn');
+      env.language = '';
+      expect(documentLanguage()).toBe('en');
+      // The value is written into markup, so it must not be able to close the attribute.
+      env.language = 'x" onload="alert(1)';
+      const parsed = new DOMParser().parseFromString(renderHtml(), 'text/html');
+      expect(parsed.documentElement.getAttribute('lang')).toBe('x" onload="alert(1)');
+      expect(parsed.documentElement.hasAttribute('onload')).toBe(false);
+    } finally {
+      env.language = originalLanguage;
+    }
+  });
+
   it('keeps the Content Security Policy unchanged', () => {
     (vscode.l10n as unknown as MutableL10n).bundle = { 'No results': '无结果' };
     const html = renderHtml();

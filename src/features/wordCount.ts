@@ -70,11 +70,11 @@ export function calculateStats(text: string): DocumentStats {
  */
 export function formatStatsTooltip(stats: DocumentStats): string {
   return [
-    `${stats.characters.toLocaleString()} characters`,
-    `${stats.charactersNoSpaces.toLocaleString()} characters (no spaces)`,
-    `${stats.lines.toLocaleString()} lines`,
-    `${stats.paragraphs.toLocaleString()} paragraphs`,
-    `~${stats.readingTime} min read`,
+    vscode.l10n.t('{0} characters', stats.characters.toLocaleString()),
+    vscode.l10n.t('{0} characters (no spaces)', stats.charactersNoSpaces.toLocaleString()),
+    vscode.l10n.t('{0} lines', stats.lines.toLocaleString()),
+    vscode.l10n.t('{0} paragraphs', stats.paragraphs.toLocaleString()),
+    vscode.l10n.t('~{0} min read', stats.readingTime),
   ].join('\n');
 }
 
@@ -153,7 +153,7 @@ export class WordCountFeature {
 
     const stats = calculateStats(document.getText());
 
-    this.statusBarItem.text = `$(pencil) ${stats.words.toLocaleString()} words`;
+    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t('{0} words', stats.words.toLocaleString())}`;
     this.statusBarItem.tooltip = formatStatsTooltip(stats);
     this.statusBarItem.show();
   }
@@ -178,8 +178,8 @@ export class WordCountFeature {
     const selectedText = editor.document.getText(editor.selection);
     const stats = calculateStats(selectedText);
 
-    this.statusBarItem.text = `$(pencil) ${stats.words.toLocaleString()} words selected`;
-    this.statusBarItem.tooltip = `Selected:\n${formatStatsTooltip(stats)}`;
+    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t('{0} words selected', stats.words.toLocaleString())}`;
+    this.statusBarItem.tooltip = vscode.l10n.t('Selected:\n{0}', formatStatsTooltip(stats));
   }
 
   /**
@@ -195,12 +195,12 @@ export class WordCountFeature {
     const stats = calculateStats(document.getText());
 
     const message = [
-      `📊 Document Statistics`,
-      `Words: ${stats.words.toLocaleString()}`,
-      `Characters: ${stats.characters.toLocaleString()}`,
-      `Lines: ${stats.lines.toLocaleString()}`,
-      `Paragraphs: ${stats.paragraphs.toLocaleString()}`,
-      `Reading time: ~${stats.readingTime} min`,
+      vscode.l10n.t('📊 Document Statistics'),
+      vscode.l10n.t('Words: {0}', stats.words.toLocaleString()),
+      vscode.l10n.t('Characters: {0}', stats.characters.toLocaleString()),
+      vscode.l10n.t('Lines: {0}', stats.lines.toLocaleString()),
+      vscode.l10n.t('Paragraphs: {0}', stats.paragraphs.toLocaleString()),
+      vscode.l10n.t('Reading time: ~{0} min', stats.readingTime),
     ].join(' | ');
 
     vscode.window.showInformationMessage(message);

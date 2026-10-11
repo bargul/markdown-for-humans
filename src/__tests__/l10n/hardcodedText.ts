@@ -166,7 +166,8 @@ function isUiSink(node: ts.Node, sourceFile: ts.SourceFile): boolean {
     if (ts.isPropertyAssignment(parent)) {
       if (parent.name === child) return false;
       if (parent.initializer === child && LABEL_KEYS.has(parent.name.getText(sourceFile))) {
-        return true;
+        // `{ message, comment }` handed to a translation call is already translated.
+        return !isL10nCall(parent.parent.parent, sourceFile);
       }
     }
     if (ts.isFunctionLike(parent) || ts.isSourceFile(parent)) return false;
