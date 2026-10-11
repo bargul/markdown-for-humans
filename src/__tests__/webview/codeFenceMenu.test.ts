@@ -4,6 +4,8 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { closeHistory } from '@tiptap/pm/history';
 import { createFormattingToolbar } from '../../webview/BubbleMenuView';
+import { parseFenceInfo } from '../../webview/highlighting/fenceInfo';
+import { resolveGrammar } from '../../webview/highlighting/languageRegistry';
 
 describe('code language menu', () => {
   let editor: Editor;
@@ -84,6 +86,30 @@ describe('code language menu', () => {
 
     expect(editor.getAttributes('codeBlock').language).toBe('abap title="report"');
     expect(menuItem('ABAP').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('offers C# and recognizes its cs alias as the same grammar (issue #81)', () => {
+    editor.commands.updateAttributes('codeBlock', { language: 'cs title="Program.cs"' });
+    expect(menuItem('C#').getAttribute('aria-pressed')).toBe('true');
+
+    menuItem('C#').click();
+
+    expect(editor.getAttributes('codeBlock').language).toBe('csharp title="Program.cs"');
+    expect(menuItem('C#').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('only offers languages the highlighter has a grammar for', () => {
+    const menu = menuItem('Plain Text').parentElement as HTMLElement;
+    const labels = Array.from(menu.querySelectorAll<HTMLButtonElement>('.toolbar-dropdown-item'))
+      .map(item => item.getAttribute('aria-label') ?? '')
+      .filter(label => label !== 'Plain Text');
+    expect(labels.length).toBeGreaterThan(10);
+
+    for (const label of labels) {
+      menuItem(label).click();
+      const chosen = parseFenceInfo(editor.getAttributes('codeBlock').language).language;
+      expect([label, resolveGrammar(chosen)]).toEqual([label, expect.any(String)]);
+    }
   });
 
   it('preserves each fence suffix when changing several selected code blocks', () => {
