@@ -150,7 +150,11 @@ describe('BubbleMenuView', () => {
       const bold = iconOf(toolbar, 'Toggle bold (Ctrl+B)');
       expect(bold?.textContent).toBe('F');
       expect(bold?.classList.contains('codicon-bold')).toBe(false);
+      // A plain letter would not say "bold", so it is drawn in the style it stands for.
+      expect(bold?.classList.contains('toolbar-letter-bold')).toBe(true);
       expect(iconOf(toolbar, 'Toggle Heading 1')?.textContent).toBe('Ü1');
+      // Heading text is not a styled letter.
+      expect(iconOf(toolbar, 'Toggle Heading 1')?.className).not.toContain('toolbar-letter-');
       // Italic was not given another letter, so it keeps its glyph.
       expect(iconOf(toolbar, 'Toggle italic (Ctrl+I)')?.classList.contains('codicon-italic')).toBe(
         true

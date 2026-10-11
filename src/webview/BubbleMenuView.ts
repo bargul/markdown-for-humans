@@ -152,7 +152,12 @@ type ToolbarIcon = {
   svg?: string;
   fallback: string;
   badge?: string;
+  // Set when a language replaces a letter glyph with its own letter, which is then
+  // drawn bold, italic or struck through so it still shows what the button does.
+  letterStyle?: LetterStyle;
 };
+
+type LetterStyle = 'bold' | 'italic' | 'strikethrough';
 
 // Custom "√x" radical glyph for the Math toolbar button. A codicon (previously
 // `symbol-numeric`) read as Slack-like and not obviously math; this stroke path
@@ -257,6 +262,10 @@ function createIconElement(icon: ToolbarIcon | undefined, baseClass: string): HT
     }
   }
 
+  if (icon.letterStyle) {
+    span.classList.add(`toolbar-letter-${icon.letterStyle}`);
+  }
+
   if (icon.badge) {
     span.classList.add('heading-icon');
     span.setAttribute('data-badge', icon.badge);
@@ -271,12 +280,14 @@ function createIconElement(icon: ToolbarIcon | undefined, baseClass: string): HT
  * The icon font draws the English letter. A language that prints another
  * letter on that button gets it as text; every other language keeps the glyph.
  *
- * @param name - Codicon name of the English glyph
+ * @param name - Codicon name of the English glyph, also the style a text letter is drawn in
  * @param english - The letter the glyph shows
  * @param localized - The letter for the display language
  */
-function letterIcon(name: string, english: string, localized: string): ToolbarIcon {
-  return localized === english ? { name, fallback: english } : { fallback: localized };
+function letterIcon(name: LetterStyle, english: string, localized: string): ToolbarIcon {
+  return localized === english
+    ? { name, fallback: english }
+    : { fallback: localized, letterStyle: name };
 }
 
 function closeAllDropdowns() {

@@ -1197,7 +1197,7 @@ function captureScale(rectangle: CaptureRectangle, requested: number): number {
   if (basePixels <= 0 || basePixels > MAX_PIXELS) {
     throw new FeedbackCaptureError(
       'MD4H-FB-CAPTURE-002',
-      l10n.t('The selected area exceeds the {0} feedback limit.', '12 megapixels')
+      l10n.t('The selected area exceeds the 12 megapixels feedback limit.')
     );
   }
   const maximumScale = Math.sqrt(MAX_PIXELS / basePixels);

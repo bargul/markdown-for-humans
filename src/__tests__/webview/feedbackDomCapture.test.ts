@@ -1088,7 +1088,8 @@ describe('modern-screenshot feedback rasterizer localization', () => {
     l10n.configureL10n({
       'The selected area exceeds the {0} resource-reference feedback capture limit. Select a smaller area.':
         'La zone dépasse la limite de {0} références de ressources. Sélectionnez une zone plus petite.',
-      'The selected area exceeds the {0} feedback limit.': 'La zone dépasse la limite de {0}.',
+      'The selected area exceeds the 12 megapixels feedback limit.':
+        'La zone dépasse la limite de 12 mégapixels.',
       'A rendered image or background is not available through the VS Code webview resource boundary.':
         'Une image affichée est inaccessible.',
     });
@@ -1101,7 +1102,7 @@ describe('modern-screenshot feedback rasterizer localization', () => {
     );
     await expect(oversizedCapture()).rejects.toMatchObject({
       code: 'MD4H-FB-CAPTURE-002',
-      message: 'La zone dépasse la limite de 12 megapixels.',
+      message: 'La zone dépasse la limite de 12 mégapixels.',
     });
     const external = document.createElement('div');
     external.innerHTML = '<img src="https://example.com/private.png">';

@@ -20,6 +20,12 @@ Developer rules: `vibe-coding-rules/localization.md`.
 
 ## Status
 
-| Locale  | Where    | State                                                        |
-| ------- | -------- | ------------------------------------------------------------ |
-| `zh-cn` | `drafts` | Sample for a handful of strings, not reviewed by a native speaker |
+| Locale  | Language             | Where    | State                                                  |
+| ------- | -------------------- | -------- | ------------------------------------------------------ |
+| `zh-cn` | Chinese (Simplified) | `drafts` | Complete machine draft. Needs a native reader's review |
+| `ja`    | Japanese             | `drafts` | Complete machine draft. Needs a native reader's review |
+| `es`    | Spanish              | `drafts` | Complete machine draft. Needs a native reader's review |
+| `pt-br` | Portuguese (Brazil)  | `drafts` | Complete machine draft. Needs a native reader's review |
+| `ru`    | Russian              | `drafts` | Complete machine draft. Needs a native reader's review |
+
+Reviewing one of these? Each was drafted by an AI model against VS Code's own terminology for that language. Corrections are welcome as a pull request or an issue.

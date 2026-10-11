@@ -72,6 +72,7 @@ import { shouldOpenLinkFromClick } from './utils/linkClick';
 import { describeUncaughtError } from './utils/describeUncaughtError';
 import * as l10n from './l10n';
 import { escapeHtmlText } from '../shared/l10n';
+import { applyLocalizedCssText } from './utils/localizedCssText';
 import {
   createFeedbackNodeViewInteractionGuards,
   createFeedbackReviewController,
@@ -1101,6 +1102,9 @@ function initializeEditor(initialContent: string) {
     // VS Code owns the Markdown and Feedback lifecycle. Restore only bounded
     // presentation coordinates after that exact document version initializes.
     restoreRichViewState(editorInstance);
+
+    // The placeholder and drop hint are drawn by CSS; hand it their translated text.
+    applyLocalizedCssText();
 
     // Create and insert formatting toolbar at top
     formattingToolbar = createFormattingToolbar(editorInstance);
