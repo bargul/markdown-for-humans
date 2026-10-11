@@ -15,6 +15,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vscode = require('vscode');
 
+// Windows can still hold a just-closed file for a moment; retry instead of failing the test on cleanup.
+const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 10, retryDelay: 100 };
+
 const CUSTOM_EDITOR_VIEW_TYPE = 'markdownForHumans.editor';
 const COMMAND_ID = 'markdownForHumans.pastePlainText';
 
@@ -92,7 +95,7 @@ suite('Paste as Plain Text (Ext Host)', () => {
       // A dirty document would stop closeAllEditors at a save prompt.
       await vscode.workspace.saveAll(false);
       await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-      fs.rmSync(temporary, { recursive: true, force: true });
+      fs.rmSync(temporary, REMOVE_OPTIONS);
     }
   }
 

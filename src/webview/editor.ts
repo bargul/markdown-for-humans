@@ -58,6 +58,7 @@ import {
   getPendingImageCount,
 } from './features/imageDragDrop';
 import { hideOutOfSyncBanner, showOutOfSyncBanner } from './features/outOfSyncBanner';
+import { createSourceLossGuard, type SourceLossGuard } from './features/sourceLossGuard';
 import { hideTocOverlay, isTocVisible, toggleTocOverlay } from './features/tocOverlay';
 import { hideSearchOverlay, isSearchVisible, showSearchOverlay } from './features/searchOverlay';
 import { showLinkDialog } from './features/linkDialog';
@@ -194,6 +195,7 @@ const vscode = acquireVsCodeApi();
 
 let editor: Editor | null = null;
 let feedbackReviewController: FeedbackReviewController | null = null;
+let sourceLossGuard: SourceLossGuard | null = null;
 let feedbackPeerLockController: FeedbackPeerLockController | null = null;
 let pendingFeedbackPeerLock: { lockId: string; message: string } | null = null;
 let feedbackControllerReadyRequestId: string | null = null;
@@ -1091,6 +1093,13 @@ function initializeEditor(initialContent: string) {
       console.warn('[MD4H] Failed to install blank-line lexer normalizer:', error);
     }
 
+    // Created before the first load, so even the first keystroke is checked.
+    sourceLossGuard = createSourceLossGuard({
+      editor: editorInstance,
+      getBlankLineMode: () => blankLineMode,
+      openSourceView: () => window.dispatchEvent(new CustomEvent('openSourceView')),
+    });
+
     // Set initial content as markdown (Tiptap v3 requires explicit contentType)
     if (initialContent) {
       // Prevent onUpdate from firing during initialization - this was causing
@@ -1098,7 +1107,9 @@ function initializeEditor(initialContent: string) {
       isUpdating = true;
       // Unedited blocks save with their authored Markdown, not TipTap's canonical form.
       // Opening the file is not an edit, so Undo must not be able to step back past it.
+      sourceLossGuard.beforeLoad();
       setMarkdownContentPreservingSource(editor, initialContent, { addToHistory: false });
+      sourceLossGuard.documentLoaded(initialContent);
       isUpdating = false;
     }
 
@@ -2379,7 +2390,11 @@ function updateEditorContent(markdown: string): boolean {
     console.log(`[MD4H] Saving cursor position: ${from}-${to}`);
 
     // Set content
+    // A replacement the editor rejects leaves the guard off until the host's
+    // reconciliation loads content again.
+    sourceLossGuard?.beforeLoad();
     const setContentResult = setMarkdownContentPreservingSource(editor, markdown);
+    if (setContentResult !== false) sourceLossGuard?.documentLoaded(markdown);
     if (setContentResult === false) {
       console.error('[MD4H] Editor rejected host content replacement');
       hostContentDeferred = true;

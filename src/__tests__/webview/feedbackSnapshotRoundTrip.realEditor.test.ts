@@ -240,6 +240,90 @@ describe('Feedback snapshot renderer round-trip', () => {
     }
   });
 
+  // Since 0.4.2 every link reference definition is a visible marker block,
+  // but markdown-it gives it no block, so Feedback refused to start.
+  it('anchors link reference definitions to their exact source lines', () => {
+    const source = [
+      '# Links',
+      '',
+      'See [docs] and [the site][site].',
+      '',
+      '[docs]: https://example.com/docs',
+      '[site]: https://example.com "Home"',
+      '',
+    ].join('\n');
+    const editor = createFeedbackSnapshotEditor(source);
+    try {
+      const blocks = enumerateCanonicalFeedbackBlocks(editor);
+      const result = buildFeedbackAnchorMap(source, blocks);
+      expect(result).toEqual(expect.objectContaining({ ok: true }));
+      if (!result.ok) return;
+
+      const lines = source.split('\n');
+      expect(result.map.blocks).toHaveLength(blocks.length);
+      expect(
+        result.map.blocks
+          .filter((_anchor, index) => blocks[index].markdown.startsWith('['))
+          .map(anchor => lines.slice(anchor.startLine - 1, anchor.endLine).join('\n'))
+      ).toEqual(['[docs]: https://example.com/docs', '[site]: https://example.com "Home"']);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  it('anchors a repeated definition to its own line', () => {
+    const source = [
+      'See [a].',
+      '',
+      '[a]: https://one.example',
+      '[a]: https://two.example',
+      '[A]: https://three.example',
+      '',
+      'End.',
+      '',
+    ].join('\n');
+    const editor = createFeedbackSnapshotEditor(source);
+    try {
+      const result = buildFeedbackAnchorMap(source, enumerateCanonicalFeedbackBlocks(editor));
+      expect(result).toEqual(expect.objectContaining({ ok: true }));
+      if (!result.ok) return;
+      expect(
+        result.map.blocks.map(anchor => [anchor.kind, anchor.startLine, anchor.endLine])
+      ).toEqual([
+        ['paragraph', 1, 1],
+        ['html', 3, 3],
+        ['html', 4, 4],
+        ['html', 5, 5],
+        ['paragraph', 7, 7],
+      ]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  it("anchors every block of this repository's changelog, definitions included", () => {
+    const source = readFileSync(resolve(__dirname, '../../../CHANGELOG.md'), 'utf8');
+    const editor = createFeedbackSnapshotEditor(source);
+    try {
+      const blocks = enumerateCanonicalFeedbackBlocks(editor);
+      const result = buildFeedbackAnchorMap(source, blocks);
+      expect(result).toEqual(expect.objectContaining({ ok: true }));
+      if (!result.ok) return;
+
+      const lines = source.split(/\r?\n/);
+      const definitions = result.map.blocks.filter((_anchor, index) =>
+        /^\[[^\]]+\]: /.test(blocks[index].markdown)
+      );
+      expect(definitions.length).toBeGreaterThan(1);
+      for (const anchor of definitions) {
+        const block = blocks.find(candidate => candidate.ordinal === anchor.ordinal);
+        expect(lines.slice(anchor.startLine - 1, anchor.endLine).join('\n')).toBe(block?.markdown);
+      }
+    } finally {
+      editor.destroy();
+    }
+  });
+
   it('keeps nested and inline HTML comments with exact source anchors', () => {
     const source = [
       '# Title <!-- heading note -->',

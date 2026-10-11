@@ -889,5 +889,10 @@
   "~{0} min read": "阅读约 {0} 分钟",
   "📊 Document Statistics": "📊 文档统计",
   "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "编辑器尚未加载完成，因此反馈尚未就绪。请稍后重试；如果编辑器一直空白，请重新打开编辑器。",
-  "Feedback command could not be delivered. Reopen the editor and try again.": "反馈命令未能送达。请重新打开编辑器后重试。"
+  "Feedback command could not be delivered. Reopen the editor and try again.": "反馈命令未能送达。请重新打开编辑器后重试。",
+  "Edit anyway": "仍然编辑",
+  "This edit changed how the block reads in the file, because the editor rewrote its Markdown.": "此编辑改变了该块在文件中的呈现方式，因为编辑器重写了它的 Markdown。",
+  "This edit removed {0} from the block, because the editor cannot keep it.": "此编辑从该块中移除了 {0}，因为编辑器无法保留它。",
+  "This edit removed {0} from the block, because the editor cannot keep them.": "此编辑从该块中移除了 {0}，因为编辑器无法保留它们。",
+  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "此文件包含编辑器无法保留的内容：{0}。在此处进行任何编辑都会将其从文件中移除。"
 }

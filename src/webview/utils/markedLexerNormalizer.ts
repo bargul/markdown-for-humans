@@ -591,6 +591,42 @@ export function normalizeBlankLineGreedyTokens<T extends RawToken[]>(tokens: T):
   return out as T;
 }
 
+interface DefinitionTokenizer {
+  def?: (src: string) => RawToken | undefined;
+  lexer?: { tokens?: { links?: Record<string, unknown> } };
+}
+
+const definitionKeepingTokenizers = new WeakSet<object>();
+let repeatedDefinitionCount = 0;
+
+/**
+ * Make marked emit a token for a definition whose label is already defined.
+ *
+ * Marked consumes such a line and emits nothing (`[a]: one` then `[a]: two`,
+ * or `[docs]` then `[DOCS]`), so it had no marker block and the next save
+ * deleted it. The repeated definition gets a label no reference can use: marked
+ * then emits its token, and the first definition still decides where links go,
+ * as CommonMark requires.
+ *
+ * @param tokenizer - The tokenizer of the lexer about to run; patched once
+ */
+function keepRepeatedDefinitions(tokenizer: DefinitionTokenizer | undefined): void {
+  if (!tokenizer || typeof tokenizer.def !== 'function') return;
+  if (definitionKeepingTokenizers.has(tokenizer)) return;
+  definitionKeepingTokenizers.add(tokenizer);
+
+  const original = tokenizer.def;
+  tokenizer.def = function keepingDef(this: DefinitionTokenizer, src: string) {
+    const token = original.call(this, src);
+    const links = this.lexer?.tokens?.links;
+    if (token && typeof token.tag === 'string' && links?.[token.tag]) {
+      repeatedDefinitionCount += 1;
+      token.tag = `${token.tag}\u0000${repeatedDefinitionCount}`;
+    }
+    return token;
+  };
+}
+
 /**
  * Wrap a marked instance's lexer entry points so every parse pass routes
  * through `normalizeBlankLineGreedyTokens`. TipTap 3.30 constructs `Lexer`
@@ -620,6 +656,7 @@ export function installBlankLineLexerNormalizer(markedInstance: unknown): void {
       private inlineDepth = 0;
 
       lex(src: string): RawToken[] {
+        keepRepeatedDefinitions((this as { tokenizer?: DefinitionTokenizer }).tokenizer);
         return normalizeBlankLineGreedyTokens(super.lex(src));
       }
 

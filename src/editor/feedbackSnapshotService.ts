@@ -274,7 +274,14 @@ function semanticBlockPayload(
     // "## [Unreleased]" heading) resolve a shortcut reference link whose
     // "[Unreleased]: https://..." definition lives in a different block,
     // matching how the rich editor resolves it against the whole document.
-    return normalizeRenderedHtml(markdownParser.render(markdown, references && { references }));
+    const rendered = normalizeRenderedHtml(
+      markdownParser.render(markdown, references && { references })
+    );
+    // A link reference definition renders nothing, and the rich view shows its
+    // source text as a marker block. That text is the content to prove;
+    // otherwise every definition would share one empty fingerprint. Whitespace
+    // at line edges is not part of it: the editor drops it from the marker.
+    return rendered === '' ? markdown.replace(/[ \t]*\r?\n[ \t]*/g, '\n').trim() : rendered;
   } catch {
     return null;
   }

@@ -14,6 +14,7 @@
  * - Honor the rich parser's ordered-list, task-list and standalone HTML image boundaries
  * - Preserve exact raw line spans across source-only formatting differences
  * - Treat leading YAML or explicitly identified JSON frontmatter as one block
+ * - Anchor link reference definitions, which have no parsed block, by exact text
  * - Fail closed when block order or structure cannot be proven equivalent
  */
 
@@ -768,10 +769,17 @@ function canonicalBlockRepresentsFrontmatter(block: CanonicalFeedbackBlock): boo
   );
 }
 
+/**
+ * Normalized kind of one canonical block, proven by parsing its own Markdown.
+ *
+ * @returns The kind; `null` for an `html` block that parses to no block at
+ *          all, which is a link reference definition the rich view keeps as a
+ *          marker block; or the reason the block cannot be anchored
+ */
 function canonicalKindForBlock(
   block: CanonicalFeedbackBlock,
   isLeadingRawFrontmatter: boolean
-): FeedbackAnchorKind | FeedbackAnchorError {
+): FeedbackAnchorKind | null | FeedbackAnchorError {
   if (isLeadingRawFrontmatter && canonicalBlockRepresentsFrontmatter(block)) {
     return 'frontmatter';
   }
@@ -792,6 +800,9 @@ function canonicalKindForBlock(
       reason: 'invalid-canonical-block',
       detail: `Block ordinal ${block.ordinal} could not be parsed: ${parsedBlocks.detail}`,
     };
+  }
+  if (parsedBlocks.length === 0 && requestedKind === 'html') {
+    return null;
   }
   if (parsedBlocks.length !== 1) {
     return {
@@ -823,10 +834,51 @@ function canonicalRequestsJsonFrontmatter(block: CanonicalFeedbackBlock | undefi
   return /^([`~]{3,})[ \t]*json[ \t]*(?:\r?\n)/i.test(block.markdown);
 }
 
+function isBlankLine(line: string | undefined): boolean {
+  return (line ?? '').trim() === '';
+}
+
+/**
+ * Find the source lines of a canonical block that markdown-it gives no block
+ * for. Its text must be the first non-blank lines after the previous block and
+ * end before the next parsed block. Lines are compared whole, except for the
+ * whitespace at their edges: the editor drops it from a marker block, and it
+ * means nothing in a link reference definition.
+ *
+ * @param sourceLines - Every line of the saved source
+ * @param markdown - The block's Markdown, which is its source text
+ * @param afterLine - 1-based last line of the previous block, 0 at the start
+ * @param beforeLine - 1-based first line of the next parsed block
+ * @returns 1-based inclusive lines, or null when the text is not exactly there
+ */
+function findUnparsedBlockLines(
+  sourceLines: readonly string[],
+  markdown: string,
+  afterLine: number,
+  beforeLine: number
+): { startLine: number; endLine: number } | null {
+  let startLine = afterLine + 1;
+  while (startLine < beforeLine && isBlankLine(sourceLines[startLine - 1])) startLine += 1;
+
+  const expected = markdown.split(/\r?\n/);
+  const endLine = startLine + expected.length - 1;
+  if (endLine >= beforeLine) return null;
+  return expected.every(
+    (line, index) => (sourceLines[startLine - 1 + index] ?? '').trim() === line.trim()
+  )
+    ? { startLine, endLine }
+    : null;
+}
+
 /**
  * Build a frozen mapping from top-level rich-view ordinals to exact saved-file
  * lines. The function fails closed unless canonical and raw block count, order,
  * and normalized kinds all agree.
+ *
+ * A link reference definition (`[label]: url`) is a marker block in the rich
+ * view but no block to markdown-it, so it takes no part in that comparison.
+ * It is anchored to the lines between its neighbors instead, and only when
+ * those lines hold exactly the marker blocks' text and nothing else.
  *
  * @param rawMarkdown - Exact Markdown bytes decoded as text after saving
  * @param canonicalBlocks - Non-empty top-level rich blocks in document order
@@ -883,27 +935,69 @@ export function buildFeedbackAnchorMap(
   }
   rawBlocks.push(...parsedBody);
 
-  const canonicalKinds: FeedbackAnchorKind[] = [];
+  // `null` marks a block markdown-it gives no block for (a link reference definition).
+  const canonicalKinds: Array<FeedbackAnchorKind | null> = [];
+  let parsedCanonicalCount = 0;
   for (let index = 0; index < canonicalBlocks.length; index += 1) {
     const kind = canonicalKindForBlock(canonicalBlocks[index], frontmatter !== null && index === 0);
-    if (typeof kind !== 'string') {
+    if (kind !== null && typeof kind !== 'string') {
       return { ok: false, error: kind };
     }
+    if (kind !== null) parsedCanonicalCount += 1;
     canonicalKinds.push(kind);
   }
 
-  if (canonicalKinds.length !== rawBlocks.length) {
+  if (parsedCanonicalCount !== rawBlocks.length) {
     return failure(
       'block-count-mismatch',
-      `Canonical block count ${canonicalKinds.length} does not match raw block count ${rawBlocks.length}.`
+      `Canonical block count ${parsedCanonicalCount} does not match raw block count ${rawBlocks.length}.`
     );
   }
 
+  const sourceLines =
+    parsedCanonicalCount === canonicalKinds.length ? [] : rawMarkdown.split(/\r?\n/);
+  const unmatched = (ordinal: number): FeedbackAnchorMapResult =>
+    failure(
+      'invalid-canonical-block',
+      `Block ordinal ${ordinal} has no parsed Markdown block and does not match the source lines between its neighbors.`
+    );
+
   const blocks: FeedbackAnchorSpan[] = [];
-  for (let index = 0; index < canonicalKinds.length; index += 1) {
-    const canonicalKind = canonicalKinds[index];
+  let rawIndex = 0;
+  // Ordinal of the unparsed block just anchored, until the lines after it are checked.
+  let openUnparsedOrdinal: number | null = null;
+  for (let index = 0; index <= canonicalKinds.length; index += 1) {
     const canonicalBlock = canonicalBlocks[index];
-    const rawBlock = rawBlocks[index];
+    const previousEndLine = blocks[blocks.length - 1]?.endLine ?? 0;
+    // The next parsed block, or the end of the source, bounds every unparsed block.
+    const nextStartLine = rawBlocks[rawIndex]?.startLine ?? sourceLines.length + 1;
+
+    if (canonicalBlock !== undefined && canonicalKinds[index] === null) {
+      const lines = findUnparsedBlockLines(
+        sourceLines,
+        canonicalBlock.markdown,
+        previousEndLine,
+        nextStartLine
+      );
+      if (lines === null) return unmatched(canonicalBlock.ordinal);
+      blocks.push({ ordinal: canonicalBlock.ordinal, kind: 'html', ...lines });
+      openUnparsedOrdinal = canonicalBlock.ordinal;
+      continue;
+    }
+
+    if (openUnparsedOrdinal !== null) {
+      // Source text here that no marker block claimed would be left without an
+      // anchor, and may mean the view and the file disagree. Do not guess.
+      for (let line = previousEndLine + 1; line < nextStartLine; line += 1) {
+        if (!isBlankLine(sourceLines[line - 1])) return unmatched(openUnparsedOrdinal);
+      }
+      openUnparsedOrdinal = null;
+    }
+    if (canonicalBlock === undefined) break;
+
+    const canonicalKind = canonicalKinds[index] as FeedbackAnchorKind;
+    const rawBlock = rawBlocks[rawIndex];
+    rawIndex += 1;
     if (canonicalKind !== rawBlock.kind) {
       return failure(
         'block-kind-mismatch',

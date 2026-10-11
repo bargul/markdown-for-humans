@@ -614,6 +614,49 @@ function rememberSourceBlocks(
   }
 }
 
+/** A top-level block the editor still holds authored source for. */
+export interface RememberedBlockSource {
+  /** Index of the block among the document's top-level nodes. */
+  index: number;
+  /** The block's Markdown as authored, which is saved while the block is not edited. */
+  source: string;
+  /** What the serializer writes for the same block once it is edited. */
+  serialized: string;
+}
+
+/**
+ * List every top-level block that would still save its authored source, next
+ * to what the serializer makes of that block. The two differ when an edit of
+ * the block would rewrite it.
+ *
+ * Serializes each listed block once, so call it outside the typing path.
+ *
+ * @param editor - Editor loaded with {@link setMarkdownContentPreservingSource}
+ * @returns One entry per block whose source is still held; edited blocks are left out
+ */
+export function listRememberedBlockSources(editor: Editor): RememberedBlockSource[] {
+  const manager = getMarkdownManager(editor);
+  const documentNode = getEditorDocument(editor);
+  if (!manager?.serialize || documentNode === null) return [];
+  patchMarkdownSerialization(manager);
+
+  const serialize = manager.serialize.bind(manager);
+  const { sources } = getEditorBlockCache(editor, manager.serialize);
+  const remembered: RememberedBlockSource[] = [];
+  for (let index = 0; index < documentNode.childCount; index++) {
+    const entry = sources[index];
+    if (entry === undefined) continue;
+    const node = documentNode.child(index);
+    if (!entry.node.eq?.(node)) continue;
+    remembered.push({
+      index,
+      source: entry.block.markdown,
+      serialized: serializeBlockMarkdown(node.toJSON(), serialize),
+    });
+  }
+  return remembered;
+}
+
 function getMarkdownManager(editor: Editor): MarkdownManager | undefined {
   const editorUnknown = editor as unknown as {
     markdown?: MarkdownManager;

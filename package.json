@@ -471,6 +471,7 @@
     "watch:webview:debug": "node scripts/build-webview.js --watch",
     "lint": "eslint src --ext ts --max-warnings 0",
     "lint:fix": "eslint src --ext ts --fix",
+    "typecheck": "tsc --noEmit -p .",
     "test": "jest",
     "l10n:extract": "node scripts/l10n-extract.js",
     "test:integration": "npm run build:release && vscode-test",
