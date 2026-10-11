@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Feedback starts on a document that has link reference definitions (`[label]: https://...`), such as a changelog with version links at the end. It refused to start with "Feedback could not match this document to the saved file". A comment on a definition points at that definition's own line.
+
 ---
 
 ## [0.4.4] - 2026-10-11

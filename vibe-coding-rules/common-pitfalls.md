@@ -169,3 +169,5 @@ See `vibe-coding-rules/styling.md` for the complete styling contract.
 **Failure:** Markdown with no visible output (link reference definitions, wrapper tags such as `<div align="center">` around Markdown, HTML comments) produced no block, so saving deleted it while the text above still depended on it.
 
 **Use instead:** Keep it as a marker block (`htmlComment` token in `markedLexerNormalizer.ts`) that shows muted source and saves it unchanged, and strip `.md4h-html-comment` from exports.
+
+**Also:** a new top-level block in the rich view must have a counterpart in `src/editor/feedbackAnchors.ts`, which pairs rich-view blocks with markdown-it's blocks. The marker block for link reference definitions had none (markdown-it emits no token for a definition), so Feedback could not start on any document that contained one. Add a real-editor case to `feedbackSnapshotRoundTrip.realEditor.test.ts` and a fixture to `test/integration/feedbackParity.extHost.test.cjs` with every such block.

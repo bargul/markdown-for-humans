@@ -410,6 +410,192 @@ describe('buildFeedbackAnchorMap', () => {
     }
   });
 
+  // A link reference definition renders nothing, so markdown-it emits no block
+  // for it, while the rich view keeps each one as a visible marker block.
+  describe('link reference definitions', () => {
+    it('anchors each trailing definition to its own source line', () => {
+      const rawMarkdown = [
+        '# Title',
+        '',
+        'See [docs] and [site].',
+        '',
+        '[docs]: https://example.com/docs',
+        '[site]: https://example.com',
+        '',
+      ].join('\n');
+
+      expect(
+        expectAnchorMap(rawMarkdown, [
+          block(0, 'heading', '# Title'),
+          block(
+            1,
+            'paragraph',
+            'See [docs](https://example.com/docs) and [site](https://example.com).'
+          ),
+          block(2, 'html', '[docs]: https://example.com/docs'),
+          block(3, 'html', '[site]: https://example.com'),
+        ]).blocks
+      ).toEqual([
+        { ordinal: 0, kind: 'heading', startLine: 1, endLine: 1 },
+        { ordinal: 1, kind: 'paragraph', startLine: 3, endLine: 3 },
+        { ordinal: 2, kind: 'html', startLine: 5, endLine: 5 },
+        { ordinal: 3, kind: 'html', startLine: 6, endLine: 6 },
+      ]);
+    });
+
+    it('anchors definitions at the start, between blocks, and over several lines', () => {
+      const rawMarkdown = [
+        '[a]: https://a.example',
+        '',
+        'One [a].',
+        '',
+        '[b]:',
+        '  https://b.example',
+        '  "Title"',
+        '',
+        '',
+        '[c]: https://c.example',
+        'Text right after.',
+      ].join('\r\n');
+
+      expect(
+        expectAnchorMap(rawMarkdown, [
+          block(0, 'html', '[a]: https://a.example'),
+          block(1, 'paragraph', 'One [a](https://a.example).'),
+          block(2, 'html', '[b]:\n  https://b.example\n  "Title"'),
+          block(4, 'html', '[c]: https://c.example'),
+          block(5, 'paragraph', 'Text right after.'),
+        ]).blocks
+      ).toEqual([
+        { ordinal: 0, kind: 'html', startLine: 1, endLine: 1 },
+        { ordinal: 1, kind: 'paragraph', startLine: 3, endLine: 3 },
+        { ordinal: 2, kind: 'html', startLine: 5, endLine: 7 },
+        { ordinal: 4, kind: 'html', startLine: 10, endLine: 10 },
+        { ordinal: 5, kind: 'paragraph', startLine: 11, endLine: 11 },
+      ]);
+    });
+
+    it('anchors definitions after frontmatter and in a document with nothing else', () => {
+      expect(
+        expectAnchorMap('---\ntitle: T\n---\n\n[a]: https://a.example\n', [
+          block(0, 'frontmatter', '```yaml\ntitle: T\n```'),
+          block(1, 'html', '[a]: https://a.example'),
+        ]).blocks
+      ).toEqual([
+        { ordinal: 0, kind: 'frontmatter', startLine: 1, endLine: 3 },
+        { ordinal: 1, kind: 'html', startLine: 5, endLine: 5 },
+      ]);
+      expect(
+        expectAnchorMap('[a]: https://a.example\n', [block(0, 'html', '[a]: https://a.example')])
+          .blocks
+      ).toEqual([{ ordinal: 0, kind: 'html', startLine: 1, endLine: 1 }]);
+    });
+
+    // The editor trims a marker block's text; edge whitespace means nothing in a definition.
+    it('anchors an indented definition and one with trailing spaces', () => {
+      const rawMarkdown =
+        'Intro [a] [b].\n\n   [a]: https://a.example\n[b]:\n    https://b.example  \n';
+
+      expect(
+        expectAnchorMap(rawMarkdown, [
+          block(0, 'paragraph', 'Intro [a](https://a.example) [b](https://b.example).'),
+          block(1, 'html', '[a]: https://a.example'),
+          block(2, 'html', '[b]:\n    https://b.example'),
+        ]).blocks
+      ).toEqual([
+        { ordinal: 0, kind: 'paragraph', startLine: 1, endLine: 1 },
+        { ordinal: 1, kind: 'html', startLine: 3, endLine: 3 },
+        { ordinal: 2, kind: 'html', startLine: 4, endLine: 5 },
+      ]);
+    });
+
+    it('keeps definition lines resolvable in both directions', () => {
+      const map = expectAnchorMap(
+        'Intro [a] [b].\n\n[a]: https://a.example\n[b]: https://b.example\n',
+        [
+          block(0, 'paragraph', 'Intro [a](https://a.example) [b](https://b.example).'),
+          block(1, 'html', '[a]: https://a.example'),
+          block(2, 'html', '[b]: https://b.example'),
+        ]
+      );
+
+      expect(findFeedbackOrdinalsForLines(map, 4, 4)).toEqual({ startOrdinal: 2, endOrdinal: 2 });
+      expect(findFeedbackOrdinalsForLines(map, 1, 4)).toEqual({ startOrdinal: 0, endOrdinal: 2 });
+      expect(mapFeedbackSelection(map, 1, 1)).toEqual({
+        ok: true,
+        range: { startOrdinal: 1, endOrdinal: 1, startLine: 3, endLine: 3 },
+      });
+    });
+
+    it.each([
+      [
+        'the marker text differs from the source line',
+        'Intro [a].\n\n[a]: https://a.example\n',
+        [
+          block(0, 'paragraph', 'Intro [a](https://a.example).'),
+          block(1, 'html', '[a]: https://other.example'),
+        ],
+      ],
+      [
+        'a definition in the source has no marker block beside the others',
+        'Intro [a].\n\n[a]: https://a.example\n[b]: https://b.example\n',
+        [
+          block(0, 'paragraph', 'Intro [a](https://a.example).'),
+          block(1, 'html', '[a]: https://a.example'),
+        ],
+      ],
+      [
+        'the marker blocks are in a different order than the source lines',
+        'Intro.\n\n[a]: https://a.example\n[b]: https://b.example\n',
+        [
+          block(0, 'paragraph', 'Intro.'),
+          block(1, 'html', '[b]: https://b.example'),
+          block(2, 'html', '[a]: https://a.example'),
+        ],
+      ],
+      [
+        'the marker sits on the other side of a block from its source line',
+        'Intro.\n\n[a]: https://a.example\n\nEnd.\n',
+        [
+          block(0, 'paragraph', 'Intro.'),
+          block(1, 'paragraph', 'End.'),
+          block(2, 'html', '[a]: https://a.example'),
+        ],
+      ],
+      [
+        'the source has no definition at all',
+        'Intro.\n\nEnd.\n',
+        [
+          block(0, 'paragraph', 'Intro.'),
+          block(1, 'html', '[a]: https://a.example'),
+          block(2, 'paragraph', 'End.'),
+        ],
+      ],
+    ])('fails closed when %s', (_name, rawMarkdown, canonicalBlocks) => {
+      const result = buildFeedbackAnchorMap(rawMarkdown, canonicalBlocks);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(FEEDBACK_ANCHOR_ERROR_CODE);
+        expect(result.error.reason).toBe('invalid-canonical-block');
+        expect(result.error.detail).toMatch(
+          /does not match the source lines between its neighbors/
+        );
+      }
+    });
+
+    it('still rejects a non-marker block that parses to no Markdown block', () => {
+      const result = buildFeedbackAnchorMap('[a]: https://a.example\n', [
+        block(0, 'paragraph', '[a]: https://a.example'),
+      ]);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.detail).toBe('Block ordinal 0 produced 0 top-level Markdown blocks.');
+      }
+    });
+  });
+
   it('builds one exact map for a roughly 10,000-line snapshot', () => {
     const blockCount = 5_000;
     const sourceBlocks = Array.from({ length: blockCount }, (_, index) => `Block ${index + 1}`);

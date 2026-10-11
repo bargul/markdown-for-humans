@@ -20,7 +20,9 @@ async function waitFor(predicate, description, timeoutMs = 30_000) {
     }
     await new Promise(resolve => setTimeout(resolve, 100));
   }
-  assert.fail(`Timed out waiting for ${description}`);
+  assert.fail(
+    `Timed out waiting for ${typeof description === 'function' ? description() : description}`
+  );
 }
 
 async function assertFeedbackStarts(fixtureName) {
@@ -67,11 +69,15 @@ async function assertFeedbackStarts(fixtureName) {
       'Feedback command must reach the ready editor without a startup sleep'
     );
 
-    const draftDir = await waitFor(() => {
-      if (!fs.existsSync(feedbackRoot)) return undefined;
-      const entries = fs.readdirSync(feedbackRoot);
-      return entries.length > 0 ? path.join(feedbackRoot, entries[0]) : undefined;
-    }, 'Feedback draft under .md4h/feedback');
+    const draftDir = await waitFor(
+      () => {
+        if (!fs.existsSync(feedbackRoot)) return undefined;
+        const entries = fs.readdirSync(feedbackRoot);
+        return entries.length > 0 ? path.join(feedbackRoot, entries[0]) : undefined;
+      },
+      () =>
+        `Feedback draft under .md4h/feedback; errors shown: ${errors.join(' | ') || '(none)'}; warnings shown: ${warnings.join(' | ') || '(none)'}`
+    );
 
     assert.ok(fs.existsSync(draftDir), 'Expected a Feedback draft directory');
     assert.equal(
@@ -112,5 +118,10 @@ suite('Feedback snapshot parity (Ext Host)', () => {
   test('starts Feedback on nested and inline HTML comments', async function () {
     this.timeout(90_000);
     await assertFeedbackStarts('html-comments.md');
+  });
+
+  test('starts Feedback on a document with link reference definitions', async function () {
+    this.timeout(90_000);
+    await assertFeedbackStarts('link-definitions.md');
   });
 });
