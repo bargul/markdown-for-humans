@@ -402,14 +402,21 @@ export function aiReferencePath(filePath: string, workspaceFolderPath?: string):
 /**
  * Format the reference an agent reads, for example `@bom/README.md#L10-14`.
  *
+ * The shape follows what Claude Code parses. Its CLI reads a line range only
+ * in the `#L` form (`#L10` or `#L10-14`); a bare `#10-14` attaches the whole
+ * file there. A path with spaces is one mention only inside quotes, with the
+ * line suffix inside them too: `@"my notes/plan.md#L3-5"`.
+ *
  * @param path - Result of {@link aiReferencePath}
  * @param range - Exact lines, or null to reference the file alone
  */
 export function formatAiReference(path: string, range: AiReferenceLineRange | null): string {
-  if (!range) return `@${path}`;
-  const lines =
-    range.startLine === range.endLine
-      ? `${range.startLine}`
-      : `${range.startLine}-${range.endLine}`;
-  return `@${path}#L${lines}`;
+  let target = path;
+  if (range) {
+    target +=
+      range.startLine === range.endLine
+        ? `#L${range.startLine}`
+        : `#L${range.startLine}-${range.endLine}`;
+  }
+  return /\s/.test(path) ? `@"${target}"` : `@${target}`;
 }

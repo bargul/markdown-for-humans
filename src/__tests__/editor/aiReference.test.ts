@@ -453,6 +453,15 @@ describe('formatAiReference', () => {
     );
     expect(formatAiReference('bom/README.md', null)).toBe('@bom/README.md');
   });
+
+  it('quotes a path with spaces, the form Claude Code reads as one mention', () => {
+    expect(formatAiReference('release notes/v1 draft.md', { startLine: 3, endLine: 5 })).toBe(
+      '@"release notes/v1 draft.md#L3-5"'
+    );
+    expect(formatAiReference('release notes/v1 draft.md', null)).toBe(
+      '@"release notes/v1 draft.md"'
+    );
+  });
 });
 
 describe('aiReferencePath', () => {

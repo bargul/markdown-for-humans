@@ -150,7 +150,8 @@ webview: toast
   - [x] Jest: real editor end to end (selection to lines), plus this repository's own documents
   - [x] Jest: `package.json` and `extension.ts` wiring, host handler, toolbar button
   - [x] Extension Development Host: command to clipboard, including the save-first rule
-  - [ ] Real VS Code window pass by hand (toolbar click, toast, mouse selection, a user keybinding)
+  - [x] Real VS Code window pass: toolbar click, toast, click selections, save-first, Feedback, spaces
+  - [ ] By hand: a user keybinding, a drag selection across blocks
 
 ---
 
@@ -180,17 +181,30 @@ webview: toast
 - **Locales:** nine new entries in each of `zh-cn`, `ja`, `es`, `pt-br`, `ru` (bundle and `package.nls`). AI translated, same status as the rest of those files.
 - **Notes:** `test/integration/workspace/.vscode/settings.json` from main is in the commit but not in this worktree's working copy, because the app's sync tool treats it as a protected path. The Extension Development Host suite therefore has to run from an export of the commit.
 
+### 2026-10-11 - Hands-on pass in a real VS Code window
+
+- **Setup:** VS Code 1.141.0 Extension Development Host on this branch's debug build, isolated profile, demo document with frontmatter, a hard-wrapped paragraph, a nested list, an alert, a table and a code block. Driven through the window's debugging port with screenshots, wheel scrolling and plain left clicks (single, double, triple). No key presses and no drags.
+- **Toolbar button, caret:** 14 of 14 exact, with 60 to 300 ms between placing the caret and clicking `@`: table header and body rows, wrapped paragraph lines 2 and 3, nested item and its continuation line, both alert lines, a frontmatter line, heading, the paragraph after two blank lines.
+- **Selections:** double-click a word gives its line (paragraph, table cell, code); triple-click the wrapped paragraph gives `#L8-10`; triple-click the nested item gives `#L17-18`.
+- **Code block:** caret on a code line, on the empty code line, and a double-clicked word each give that code line, never the fence.
+- **Unsaved changes:** after bolding a word the tab was dirty; the click saved it and the toast read "Saved the file and copied @bom/README.md#L36". The save itself collapsed the two blank lines (existing strip mode), moving that paragraph from 37 to 36, and the reference named 36, the line in the saved file.
+- **Path with spaces:** `@"release notes/v1 draft.md#L5"`.
+- **Feedback active:** the command copied the reference, showed the toast, left the file clean and the Feedback session running. The `@` button is not shown there because Feedback replaces the toolbar.
+- **Toast:** bottom right, check icon, the reference in full.
+- **Driver lesson:** early runs failed about one time in three. The cause was the test driver, which attached and detached a viewport override on every call and so resized the window around each click. One persistent session removed every failure.
+- **Still not done:** a key press (a user keybinding firing while the rich view has focus, and finding the command by typing in the Command Palette), a drag selection across blocks, a light theme look, Windows and Linux.
+
 ---
 
 ## 8. Decisions & Tradeoffs
 
-- **Line format `#L10-14`:** as written in issue 140 and as GitHub writes line anchors, so any agent reads it as lines. Open point: Claude Code's own extension inserts `#5-10` today. Whether its parser attaches the range for the `L` form is not verified. The format lives in one function.
+- **Line format `#L10-14`: settled.** Read from Claude Code 2.1.296 itself. Its CLI parses mentions with `^([^#]+)(?:#L(\d+)(?:-(\d+))?)?(?:#[^#]*)?$`, so only the `#L` form gives it a line range; a bare `#10-14` attaches the whole file there. Its VS Code panel accepts both (`/#L?\d+(?:-\d+)?$/`) and writes the bare form, while its own terminal command (`claude-code.insertAtMentioned`) writes `#L`. `#L10-14` is therefore the one form that works in both.
 - **Unsaved changes: save first.** The reference must match what the agent reads from disk. Refusing costs a second keypress every time; warning produces a reference that is wrong until the user saves. Saving is what the user would do next anyway, and Feedback already saves on entry. The toast says when a save happened. No dialog, no setting.
 - **No default keybinding.** Alt+C is Toggle Find Case Sensitive on Windows and Linux, including in this editor's find widget, and the retirement guard forbids it. Feedback commands also ship unbound. README suggests Alt+K, the chord Claude Code uses for the same action in text editors, as a personal binding.
 - **Toolbar button in the copy group.** The September decision was that Feedback is the first control; a button beside Copy MD does not compete with that. Issue 140's reporter could not find the feature after the update, which is a discoverability failure a palette-only command repeats.
 - **Toast, not status bar.** Every other toolbar action in this editor confirms inside the editor, and the status bar can be hidden. The toast is not modal and shows the reference.
 - **Bare `@path` when nothing can be verified,** instead of refusing. The path alone is true and still useful.
-- **Spaces in paths are copied as they are.** No documented quoting form was found for agent mentions.
+- **A path with spaces is quoted, with the line suffix inside the quotes:** `@"release notes/v1 draft.md#L3-5"`. Both Claude Code parsers read `@"..."` as one mention; unquoted, the mention would end at the first space. A path containing `#` or `"` is still copied as it is; Claude Code itself cannot reference such a path.
 - **Multi-root workspaces:** the path is relative to the file's own folder, matching the issue's example.
 
 ---
