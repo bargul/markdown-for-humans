@@ -214,6 +214,10 @@
         "enablement": "activeCustomEditorId == 'markdownForHumans.editor'"
       },
       {
+        "command": "markdownForHumans.pastePlainText",
+        "title": "%command.pastePlainText.title%"
+      },
+      {
         "command": "markdownForHumans.feedback.start",
         "title": "%command.feedback.start.title%"
       },
@@ -264,6 +268,12 @@
         "key": "ctrl+alt+b",
         "mac": "cmd+alt+b",
         "when": "activeCustomEditorId == 'markdownForHumans.editor'"
+      },
+      {
+        "command": "markdownForHumans.pastePlainText",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "activeCustomEditorId == 'markdownForHumans.editor' && !terminalFocus && !inputFocus"
       }
     ],
     "views": {

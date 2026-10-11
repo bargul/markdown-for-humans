@@ -346,6 +346,23 @@ export function getHtmlContent(clipboardData: DataTransfer | null): string {
 }
 
 /**
+ * The text of a single line copied from a VS Code text editor, or null for
+ * any other clipboard.
+ *
+ * VS Code marks its editor copies with a `vscode-editor-data` flavor. A copy
+ * made with an empty selection is the whole line with its line ending, which
+ * still counts as one line.
+ *
+ * @param clipboardData - ClipboardEvent data
+ * @returns The line without its line ending, or null
+ */
+export function getSingleLineEditorCopy(clipboardData: DataTransfer | null): string | null {
+  if (!clipboardData || !clipboardData.getData('vscode-editor-data')) return null;
+  const line = getPlainText(clipboardData).replace(/\r?\n$/, '');
+  return line && !/[\r\n]/.test(line) ? line : null;
+}
+
+/**
  * Parse fenced code block from text (supports ``` and ~~~ fences)
  *
  * @param text - Text that may contain a fenced code block

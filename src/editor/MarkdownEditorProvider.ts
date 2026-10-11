@@ -16,6 +16,7 @@ import { isIP } from 'net';
 import { readFile } from 'fs/promises';
 import { existsSync, realpathSync } from 'fs';
 import { outlineViewProvider, type OutlineEntry } from '../features/outlineView';
+import { choosePlainPasteMode } from '../features/pastePlainTextChoice';
 import { setActiveWebviewPanel, getActiveWebviewPanel } from '../activeWebview';
 import {
   registerFeedbackCommandTarget,
@@ -2042,6 +2043,9 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         break;
       case 'showError':
         vscode.window.showErrorMessage(message.message as string);
+        break;
+      case 'pastePlainText.choose':
+        void choosePlainPasteMode(webview, message.text);
         break;
       case 'resizeImage':
         this.handleResizeImage(message, document, webview);

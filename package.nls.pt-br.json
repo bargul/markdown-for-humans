@@ -5,6 +5,7 @@
   "command.outline.clearFilter.title": "Estrutura: Limpar filtro",
   "command.toggleFormattingShortcuts.title": "Markdown Editor for Humans: Alternar atalhos de formatação (Cmd/Ctrl+B/I/U)",
   "command.copyReferenceForAi.title": "Markdown Editor for Humans: Copiar referência para IA",
+  "command.pastePlainText.title": "Markdown Editor for Humans: Colar como texto sem formatação",
   "command.feedback.start.title": "Markdown Editor for Humans: Iniciar feedback",
   "command.feedback.commentSelection.title": "Markdown Editor for Humans: Adicionar feedback à seleção",
   "command.feedback.chooseScope.title": "Markdown Editor for Humans: Escolher escopo do feedback",
