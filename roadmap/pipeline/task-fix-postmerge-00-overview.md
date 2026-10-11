@@ -69,7 +69,7 @@ Each chunk is sized to be one branch and one PR. TDD applies: write the failing 
 | 05 | `shipped/task-fix-postmerge-05-feedback-session.md` | Discard on remote, stuck saves, locks | shipped 0.4.0 | #93 |
 | 06 | `shipped/task-fix-postmerge-06-feedback-capture.md` | Area capture stuck, blank screenshots, perf | shipped 0.4.0 | #93 |
 | 07 | `shipped/task-fix-postmerge-07-feedback-entry-ux.md` | Start refused with TOC open, stale notices, focus | shipped 0.4.0 | #93, #100 |
-| 08 | `pipeline/task-fix-postmerge-08-ai-review-ci.md` | Reviewer coverage and silent skips | **open** | #97, #102 |
+| 08 | `pipeline/task-fix-postmerge-08-ai-review-ci.md` | Reviewer coverage and silent skips | **dropped** (reviewer removed 2026-10-11) | #97, #102 |
 
 **Suggested order for remaining work:** 01 remainder, then 08, then followups.
 

@@ -4,7 +4,7 @@
 
 - **Task name:** Fix AI PR reviewer coverage and silent skips
 - **Slug:** fix-postmerge-08-ai-review-ci
-- **Status:** planned
+- **Status:** dropped on 2026-10-11. The AI PR reviewer was removed from this repository (workflows, `.ai-review.yml` and its guard test) because its check was failing and unstable. Nothing below was built.
 - **Created:** 2026-09-30
 - **Last updated:** 2026-09-30
 - **Shipped:** _(pending)_
