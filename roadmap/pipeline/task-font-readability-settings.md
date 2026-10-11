@@ -141,7 +141,7 @@
 - `src/webview/editor.css`: root rule uses the custom properties with today's values as fallbacks; `p`, `li`, `blockquote`, `.github-alert` use `var(--md-line-height, 1.58)`; code and math opt out of letter and word spacing; bare `pre` and comment markers keep the standard weight; `.mermaid-render` is pinned to VS Code's font and weight.
 - `src/editor/MarkdownEditorProvider.ts`: `getTypographySettings()`; `typography` added to the `update` payload and both `settingsUpdate` payloads; the configuration listener also watches `markdownForHumans.font` and the three `editor.font*` keys scoped to Markdown.
 - `package.json`: six settings.
-- `test/integration/typographySettings.extHost.test.cjs` (new): contributed defaults and `"[markdown]"` visibility in a real Extension Host.
+- `test/integration/typographySettings.extHost.test.cjs` (new) and `test/integration/workspace/.vscode/settings.json` (new fixture): contributed defaults and `"[markdown]"` visibility in a real Extension Host.
 - Docs: `CHANGELOG.md`, `README.md`, `vibe-coding-rules/styling.md`.
 
 **Architecture notes:**
@@ -163,19 +163,19 @@
 
 - [x] **Phase 1: Understand** - issues, current pipeline, VS Code webview facts, WCAG 1.4.12
 - [x] **Phase 2: Plan** - this file
-- [ ] **Phase 3: Failing tests**
-  - [ ] `src/__tests__/shared/typographySettings.test.ts`
-  - [ ] `src/__tests__/webview/typographyStyles.test.ts`
-  - [ ] `src/__tests__/webview/typographySettingsWiring.test.ts`
-  - [ ] `src/__tests__/editor/typographySettingsProvider.test.ts`
-  - [ ] `src/__tests__/features/typographySettingsManifest.test.ts`
-  - [ ] `test/integration/typographySettings.extHost.test.cjs`
-- [ ] **Phase 4: Implementation** - shared module, webview util, CSS, provider, manifest
-- [ ] **Phase 5: Docs** - changelog, README, styling guide, JSDoc
-- [ ] **Testing**
-  - [ ] `npm run lint`, `npx jest`, `npm run test:integration`
-  - [ ] Performance budget gates (`scripts/feedback-performance-fixture`)
-  - [ ] Native VS Code pass in light and dark themes (lead session)
+- [x] **Phase 3: Failing tests**
+  - [x] `src/__tests__/shared/typographySettings.test.ts`
+  - [x] `src/__tests__/webview/typographyStyles.test.ts`
+  - [x] `src/__tests__/webview/typographySettingsWiring.test.ts`
+  - [x] `src/__tests__/editor/typographySettingsProvider.test.ts`
+  - [x] `src/__tests__/features/typographySettingsManifest.test.ts`
+  - [x] `test/integration/typographySettings.extHost.test.cjs`
+- [x] **Phase 4: Implementation** - shared module, webview util, CSS, provider, manifest
+- [x] **Phase 5: Docs** - changelog, README, styling guide, JSDoc
+- [x] **Testing**
+  - [x] `npm run lint`, `npx jest`, `npm run test:integration`
+  - [x] Performance budget gates (`scripts/feedback-performance-fixture`)
+  - [ ] Native VS Code pass in light and dark themes (lead session; not done here)
 
 ---
 
@@ -185,6 +185,24 @@
 
 - **What:** Read issues 86, 15 and 27, the settings pipeline, the VS Code webview theming source, the API typings and WCAG 1.4.12.
 - **Notes:** The body font is inherited from VS Code's default webview stylesheet, not set by `editor.css`. `"[markdown]"` overrides never reach webview CSS variables; only the host can read them.
+
+### 2026-10-11 - Tests first, then implementation
+
+- **What:** Wrote the five Jest files (102 tests), confirmed red (three could not compile, two failed on assertions), then implemented until green.
+- **Files:** see section 5. Two exact-payload assertions in `undoSync.test.ts` gained the new `typography` field, all `null` at defaults.
+- **Results:** `npm run lint` clean. `npx jest`: 216 suites passed, 1 skipped; 4488 tests passed, 27 skipped, 121 todo. Performance gates: `verification.test.mjs` 7 of 7, `run.mjs` `"passed": true`. `npm run test:integration`: 10 passing on VS Code 1.141.0 (stable). On 1.98.0 the two new tests pass in every run; the suite as a whole is subject to the existing flake described below.
+
+### 2026-10-11 - Supplementary Chromium check (not a VS Code pass)
+
+- **What:** Loaded the stylesheet from `origin/main` and the new one in headless Chrome 155 with VS Code's default webview body rule and `--vscode-*` variables simulated, and compared computed `font-family`, `font-weight`, `font-size`, `line-height`, `letter-spacing` and `word-spacing` on 17 elements (headings, paragraph, bold, inline code, list, quote, alert, table cells, code block, comment marker, Mermaid).
+- **Results:** No difference at the defaults. With settings applied, prose changed and code, comment markers and Mermaid kept their own font, weight and spacing. A missing font fell back to the standard font. A hostile family value stayed one quoted name: `body` stayed visible, no node or stylesheet was added.
+- **Notes:** The check found that a bare `pre` (Mermaid source) and comment markers followed the body weight; fixed with an explicit weight rule and a test. jsdom cannot evaluate `var()` fallbacks, so the Jest CSS tests assert the declarations and this run confirmed the computed result.
+
+### 2026-10-11 - Extension Host evidence and a flake that is not from this change
+
+- **What:** A first version of the host test wrote a `"[markdown]"` override with `WorkspaceConfiguration.update` and restored it. On VS Code 1.141.0 and 1.98.0 the scoped read returned the override, the unscoped read did not, and `affectsConfiguration('editor.fontFamily', { languageId: 'markdown' })` was true for the change. The committed test reads the same override from a static fixture workspace setting instead, so the suite stays read-only.
+- **Existing flake, measured:** On VS Code 1.98.0 on this machine (macOS, Apple silicon) the existing test `SVG image integrity > preserves SVG files and sized image source through splits, reopen, and live Feedback` fails intermittently with `Feedback command must reach the ready, active SVG editor` after a 10 second wait. Interleaved runs on 2026-10-11: an untouched copy of `origin/main` (adcd006) failed 6 of 10; this branch failed 2 of 10. It is the first webview the suite opens on `origin/main`. No failure was seen on 1.141.0 (7 of 7 runs green on this branch).
+- **Correction:** An earlier reading of five green baseline runs blamed the runtime settings write. The 20 run comparison does not support that; the flake exists without this change.
 
 ---
 
@@ -210,3 +228,4 @@
 - Line length (measure) setting, which answers the word wrap width part of #15 and WCAG 1.4.8.
 - Separate heading font family, if #86's reporter asks for per-style control.
 - Reply on #86 and #15 once released (drafts only; owner posts).
+- Investigate separately: the SVG Extension Host test is flaky on VS Code 1.98.0 on `origin/main` (section 7). `markdownForHumans.feedback.start` returns `false` when the first rich editor is not ready within its wait.
