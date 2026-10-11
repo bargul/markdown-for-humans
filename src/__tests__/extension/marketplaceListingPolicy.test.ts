@@ -9,6 +9,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { readManifestSources, readResolvedManifest } from '../l10n/resolvedManifest';
 
 const rootDir = path.resolve(__dirname, '../../..');
 
@@ -25,8 +26,11 @@ interface PackageManifest {
   };
 }
 
-const manifestText = fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8');
-const manifest = JSON.parse(manifestText) as PackageManifest;
+// The listing and VS Code show the English text that `%key%` placeholders stand for,
+// so the policy reads the manifest with that text filled in.
+const sources = readManifestSources();
+const manifestText = sources.manifest + sources.english;
+const manifest = readResolvedManifest<PackageManifest>();
 
 const PRODUCT_NAME = 'Markdown Editor for Humans';
 
@@ -86,7 +90,7 @@ describe('marketplace listing policy', () => {
     expect(manifest.description.startsWith('WYSIWYG Markdown editor and viewer')).toBe(true);
     // Search cards show about three lines; ranking listings use 30 to 110 characters.
     expect(manifest.description.length).toBeLessThanOrEqual(120);
-    // The extension also ships to Open VSX editors such as Cursor and Windsurf.
+    // The extension also ships to Open VSX editors such as Cursor and Devin Desktop.
     expect(manifest.description).not.toMatch(/VS Code/);
     expect(manifest.description).not.toContain('—');
   });
