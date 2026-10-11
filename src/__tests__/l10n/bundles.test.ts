@@ -109,7 +109,8 @@ const locales = [...shipped, ...drafts].map(file => [label(file), file]);
 (locales.length ? describe.each(locales) : describe.skip.each([['no locale', '']]))(
   '%s',
   (_name, file) => {
-    const bundle = readJson(file);
+    // A skipped suite still runs this callback, with the empty placeholder path.
+    const bundle = file ? readJson(file) : {};
 
     it('has no stale message', () => {
       expect(Object.keys(bundle).filter(key => !(key in english))).toEqual([]);

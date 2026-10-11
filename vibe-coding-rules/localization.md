@@ -7,7 +7,7 @@
 
 | Where the text is               | How to write it                                                        | English source            |
 | ------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
-| `package.json` (manifest)       | `"title": "%markdownForHumans.someKey%"`                               | `package.nls.json`        |
+| `package.json` (manifest)       | `"title": "%command.myCommand.title%"`                                 | `package.nls.json`        |
 | Extension host (`src/` outside `webview/`) | `vscode.l10n.t('Saved {0}', name)`                          | `l10n/bundle.l10n.json`   |
 | Webview (`src/webview/`)        | `import * as l10n from '../l10n'` then `l10n.t('Saved {0}', name)`     | `l10n/bundle.l10n.json`   |
 
@@ -29,6 +29,7 @@ The English sentence is the lookup key. With no translation the English shows, s
    ```
 6. **Dates and numbers use `Intl` or `toLocaleString()`** without a hardcoded `'en-US'`.
 7. **After adding or changing text, run `npm run l10n:extract`** and commit the updated `l10n/bundle.l10n.json`.
+8. **Manifest text is edited by hand in `package.nls.json`.** Use keys shaped like the existing ones (`command.<id>.title`, `configuration.<setting>.description`) and plain string values. Do not turn `displayName` or `description` into placeholders.
 
 ## What must stay English
 
@@ -51,6 +52,7 @@ Mark such text where it sits in a UI sink: `// l10n-ignore: product name`.
 | No stale translation, placeholders kept, no added `<` or `>`       | A locale bundle is out of date or broken                |
 | Shipped locales are complete                                       | A bundle in `l10n/` misses a message                    |
 | Hardcoded UI text ratchet                                          | New English text is written straight into a UI sink     |
+| Manifest text                                                      | A command title or setting description is not a `%key%`, or a key has no English text |
 
 To list the hardcoded UI text that is left, with file and line:
 
@@ -60,8 +62,8 @@ L10N_LIST=/tmp/hardcoded.txt npx jest src/__tests__/l10n/hardcodedText.test.ts
 
 ## Languages
 
-- `l10n/bundle.l10n.<locale>.json`: shipped. Must translate every message.
-- `l10n/drafts/bundle.l10n.<locale>.json`: work in progress. Not packaged, may be partial.
+- Shipped: `l10n/bundle.l10n.<locale>.json` plus `package.nls.<locale>.json` in the repo root. Both must be complete, and they ship together.
+- Draft: the same two files under `l10n/drafts/`. Not packaged, may be partial.
 - A language moves from `drafts/` to `l10n/` only when it is complete and a native reader has reviewed it.
 - VS Code picks the bundle from the display language. There is no language setting in this extension.
 
