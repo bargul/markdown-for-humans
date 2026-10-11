@@ -10,6 +10,7 @@
 import { readFileSync } from 'fs';
 import * as path from 'path';
 import { resolveTypographySettings } from '../../shared/typographySettings';
+import { readResolvedManifest } from '../l10n/resolvedManifest';
 
 interface SettingSchema {
   type: string;
@@ -23,8 +24,10 @@ interface SettingSchema {
 }
 
 const root = path.resolve(__dirname, '../../..');
-const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
-const properties: Record<string, SettingSchema> = manifest.contributes.configuration.properties;
+const manifest = readResolvedManifest<{
+  contributes: { configuration: { properties: Record<string, SettingSchema> } };
+}>();
+const properties = manifest.contributes.configuration.properties;
 const setting = (name: string) => properties[`markdownForHumans.font.${name}`];
 const describe_ = (schema: SettingSchema) => schema.markdownDescription ?? schema.description ?? '';
 

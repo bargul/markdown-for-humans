@@ -102,6 +102,25 @@ The document is locked while you review, so your comments always point at the so
 
 ---
 
+## Languages
+
+The editor follows your VS Code display language. Menus, dialogs, messages, command names and settings are available in:
+
+| Language | Display language to pick |
+| -------- | ------------------------ |
+| English | English |
+| 简体中文 (Chinese, Simplified) | 中文(简体) |
+| 日本語 (Japanese) | 日本語 |
+| Español (Spanish) | Español |
+| Português do Brasil (Portuguese, Brazil) | Português (Brasil) |
+| Русский (Russian) | Русский |
+
+- **Switch language:** run **Configure Display Language** from the Command Palette and pick one. Any other display language shows English.
+- **Word count** counts Chinese and Japanese text by character, the way word processors do.
+- **Help us get it right.** These translations were drafted and cross-checked by AI against VS Code's own wording, and no native speaker has reviewed them yet. If something reads wrong, or you want another language, see [Translations](./l10n/README.md) or [open an issue](https://github.com/concretios/markdown-for-humans/issues).
+
+---
+
 ## FAQ
 
 **VS Code now has a built-in Markdown editor. Why use this?**

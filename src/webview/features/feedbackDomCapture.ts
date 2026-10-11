@@ -21,6 +21,7 @@ import {
   type DomRasterizer,
 } from './feedbackCapture';
 import { FEEDBACK_MAX_SCREENSHOT_DATA_URL_LENGTH_V2 } from '../../shared/feedbackEvidenceV2';
+import * as l10n from '../l10n';
 
 export type ModernScreenshotFunction = (
   node: Node,
@@ -117,17 +118,29 @@ function isAllowedResourceUrl(value: string): boolean {
   }
 }
 
-function captureComplexityError(limit: string): FeedbackCaptureError {
+function captureComplexityError(
+  kind: 'resource-reference' | 'rendered-node',
+  limit: string
+): FeedbackCaptureError {
   return new FeedbackCaptureError(
     'MD4H-FB-CAPTURE-002',
-    `The selected area exceeds the ${limit} feedback capture limit. Select a smaller area.`
+    kind === 'resource-reference'
+      ? l10n.t(
+          'The selected area exceeds the {0} resource-reference feedback capture limit. Select a smaller area.',
+          limit
+        )
+      : l10n.t(
+          'The selected area exceeds the {0} rendered-node feedback capture limit. Select a smaller area.',
+          limit
+        )
   );
 }
 
 function appendResourceUrl(urls: string[], value: string): void {
   if (urls.length >= MAX_CAPTURE_RESOURCE_REFERENCES) {
     throw captureComplexityError(
-      `${MAX_CAPTURE_RESOURCE_REFERENCES.toLocaleString()} resource-reference`
+      'resource-reference',
+      MAX_CAPTURE_RESOURCE_REFERENCES.toLocaleString()
     );
   }
   urls.push(value);
@@ -160,7 +173,9 @@ export function validateCaptureResources(root: HTMLElement, signal?: AbortSignal
   if (unavailable) {
     throw new FeedbackCaptureError(
       'MD4H-FB-CAPTURE-001',
-      'A rendered image or background is not available through the VS Code webview resource boundary.'
+      l10n.t(
+        'A rendered image or background is not available through the VS Code webview resource boundary.'
+      )
     );
   }
   throwIfFeedbackCaptureAborted(signal);
@@ -298,7 +313,7 @@ async function waitForRenderedResources(
   if ('fonts' in document && document.fonts?.ready) {
     await withTimeout(
       document.fonts.ready.then(() => undefined),
-      'The document fonts did not become ready for capture.',
+      l10n.t('The document fonts did not become ready for capture.'),
       signal
     );
   }
@@ -312,7 +327,7 @@ async function waitForRenderedResources(
         try {
           await withTimeout(
             image.decode(),
-            'A rendered image did not become ready for capture.',
+            l10n.t('A rendered image did not become ready for capture.'),
             signal
           );
           return;
@@ -320,14 +335,14 @@ async function waitForRenderedResources(
           throwIfFeedbackCaptureAborted(signal);
           throw new FeedbackCaptureError(
             'MD4H-FB-CAPTURE-001',
-            'A rendered image could not be decoded for capture.',
+            l10n.t('A rendered image could not be decoded for capture.'),
             error
           );
         }
       }
       throw new FeedbackCaptureError(
         'MD4H-FB-CAPTURE-001',
-        'A rendered image is not loaded and cannot be captured.'
+        l10n.t('A rendered image is not loaded and cannot be captured.')
       );
     })
   );
@@ -431,7 +446,7 @@ function intersectingCaptureChildren(
       // this function, so the cap-boundary tests pin the success/failure
       // counts rather than inspecting array length mid-loop.
       if (intersections.length >= MAX_CAPTURE_CLONE_NODES) {
-        throw captureComplexityError(`${MAX_CAPTURE_CLONE_NODES.toLocaleString()} rendered-node`);
+        throw captureComplexityError('rendered-node', MAX_CAPTURE_CLONE_NODES.toLocaleString());
       }
       intersections.push({ element, bounds });
     }
@@ -601,7 +616,7 @@ function intersectingHorizontalElements<TElement extends HTMLElement>(
 function consumeCaptureCloneNode(budget: CaptureCloneBudget): void {
   budget.nodeCount += 1;
   if (budget.nodeCount > MAX_CAPTURE_CLONE_NODES) {
-    throw captureComplexityError(`${MAX_CAPTURE_CLONE_NODES.toLocaleString()} rendered-node`);
+    throw captureComplexityError('rendered-node', MAX_CAPTURE_CLONE_NODES.toLocaleString());
   }
 }
 
@@ -638,8 +653,12 @@ function assertRetainedElementIsCloneable(
   throw new FeedbackCaptureError(
     'MD4H-FB-CAPTURE-001',
     element.tagName === 'CANVAS'
-      ? 'The selected area contains a canvas that cannot be cloned faithfully for feedback capture.'
-      : 'The selected area contains an opaque rendered component that cannot be cloned faithfully for feedback capture.'
+      ? l10n.t(
+          'The selected area contains a canvas that cannot be cloned faithfully for feedback capture.'
+        )
+      : l10n.t(
+          'The selected area contains an opaque rendered component that cannot be cloned faithfully for feedback capture.'
+        )
   );
 }
 
@@ -1044,7 +1063,7 @@ function intersectingMermaidWrappers(
 function mermaidRenderError(): FeedbackCaptureError {
   return new FeedbackCaptureError(
     'MD4H-FB-CAPTURE-001',
-    'A Mermaid diagram failed to render and cannot be captured.'
+    l10n.t('A Mermaid diagram failed to render and cannot be captured.')
   );
 }
 
@@ -1066,7 +1085,7 @@ async function waitForPendingMermaid(wrapper: HTMLElement, signal?: AbortSignal)
       reject(
         new FeedbackCaptureError(
           'MD4H-FB-CAPTURE-001',
-          'A Mermaid diagram does not expose a valid capture readiness state.'
+          l10n.t('A Mermaid diagram does not expose a valid capture readiness state.')
         )
       );
     };
@@ -1081,7 +1100,7 @@ async function waitForPendingMermaid(wrapper: HTMLElement, signal?: AbortSignal)
   try {
     await withTimeout(
       readiness,
-      'A Mermaid diagram did not become ready before the capture timeout.',
+      l10n.t('A Mermaid diagram did not become ready before the capture timeout.'),
       signal
     );
   } finally {
@@ -1108,7 +1127,7 @@ async function waitForIntersectingMermaid(
     }
     throw new FeedbackCaptureError(
       'MD4H-FB-CAPTURE-001',
-      'A Mermaid diagram does not expose a valid capture readiness state.'
+      l10n.t('A Mermaid diagram does not expose a valid capture readiness state.')
     );
   }
   await Promise.all(pending.map(wrapper => waitForPendingMermaid(wrapper, signal)));
@@ -1178,7 +1197,7 @@ function captureScale(rectangle: CaptureRectangle, requested: number): number {
   if (basePixels <= 0 || basePixels > MAX_PIXELS) {
     throw new FeedbackCaptureError(
       'MD4H-FB-CAPTURE-002',
-      'The selected area exceeds the 12 megapixels feedback limit.'
+      l10n.t('The selected area exceeds the 12 megapixels feedback limit.')
     );
   }
   const maximumScale = Math.sqrt(MAX_PIXELS / basePixels);
@@ -1251,7 +1270,7 @@ export function createModernScreenshotRasterizer(
             placeholderImage: () => {
               throw new FeedbackCaptureError(
                 'MD4H-FB-CAPTURE-001',
-                'A rendered resource could not be loaded for capture.'
+                l10n.t('A rendered resource could not be loaded for capture.')
               );
             },
           },
@@ -1269,7 +1288,7 @@ export function createModernScreenshotRasterizer(
       ) {
         throw new FeedbackCaptureError(
           'MD4H-FB-CAPTURE-002',
-          'The screenshot could not be encoded within the feedback screenshot size limit.'
+          l10n.t('The screenshot could not be encoded within the feedback screenshot size limit.')
         );
       }
       throwIfFeedbackCaptureAborted(request.signal);
@@ -1283,7 +1302,7 @@ export function createModernScreenshotRasterizer(
       if (error instanceof FeedbackCaptureError) throw error;
       throw new FeedbackCaptureError(
         'MD4H-FB-CAPTURE-002',
-        'The selected area could not be rasterized as PNG.',
+        l10n.t('The selected area could not be rasterized as PNG.'),
         error
       );
     } finally {

@@ -12,7 +12,9 @@
  * @module BubbleMenuView
  */
 
+import * as l10n from './l10n';
 import { MERMAID_TEMPLATES } from './mermaidTemplates';
+import { fitFeedbackToolbarLabels } from './utils/fitFeedbackToolbarLabels';
 import { showTableInsertDialog } from './features/tableInsert';
 import { showLinkDialog } from './features/linkDialog';
 import { showImageInsertDialog } from './features/imageInsertDialog';
@@ -151,7 +153,12 @@ type ToolbarIcon = {
   svg?: string;
   fallback: string;
   badge?: string;
+  // Set when a language replaces a letter glyph with its own letter, which is then
+  // drawn bold, italic or struck through so it still shows what the button does.
+  letterStyle?: LetterStyle;
 };
+
+type LetterStyle = 'bold' | 'italic' | 'strikethrough';
 
 // Custom "√x" radical glyph for the Math toolbar button. A codicon (previously
 // `symbol-numeric`) read as Slack-like and not obviously math; this stroke path
@@ -256,12 +263,32 @@ function createIconElement(icon: ToolbarIcon | undefined, baseClass: string): HT
     }
   }
 
+  if (icon.letterStyle) {
+    span.classList.add(`toolbar-letter-${icon.letterStyle}`);
+  }
+
   if (icon.badge) {
     span.classList.add('heading-icon');
     span.setAttribute('data-badge', icon.badge);
   }
 
   return span;
+}
+
+/**
+ * Icon for a button whose glyph is a letter, such as B for Bold.
+ *
+ * The icon font draws the English letter. A language that prints another
+ * letter on that button gets it as text; every other language keeps the glyph.
+ *
+ * @param name - Codicon name of the English glyph, also the style a text letter is drawn in
+ * @param english - The letter the glyph shows
+ * @param localized - The letter for the display language
+ */
+function letterIcon(name: LetterStyle, english: string, localized: string): ToolbarIcon {
+  return localized === english
+    ? { name, fallback: english }
+    : { fallback: localized, letterStyle: name };
 }
 
 function closeAllDropdowns() {
@@ -325,8 +352,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
   const buttons: ToolbarItem[] = [
     {
       type: 'button',
-      label: 'Start feedback',
-      title: 'Log feedback for an LLM',
+      label: l10n.t('Start feedback'),
+      title: l10n.t('Log feedback for an LLM'),
       icon: { name: 'comment-discussion-sparkle', fallback: '✦' },
       feedbackData: 'start',
       className: 'feedback-start-button',
@@ -337,9 +364,9 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     { type: 'separator' },
     {
       type: 'button',
-      label: 'Bold',
-      title: `Toggle bold (${modKeyLabel}+B)`,
-      icon: { name: 'bold', fallback: 'B' },
+      label: l10n.t('Bold'),
+      title: l10n.t('Toggle bold ({0}+B)', modKeyLabel),
+      icon: letterIcon('bold', 'B', l10n.t({ message: 'B', comment: 'Bold button letter' })),
       action: () => editor.chain().focus().toggleBold().run(),
       isActive: () => editor.isActive('bold'),
       className: 'bold',
@@ -347,9 +374,9 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Italic',
-      title: `Toggle italic (${modKeyLabel}+I)`,
-      icon: { name: 'italic', fallback: 'I' },
+      label: l10n.t('Italic'),
+      title: l10n.t('Toggle italic ({0}+I)', modKeyLabel),
+      icon: letterIcon('italic', 'I', l10n.t({ message: 'I', comment: 'Italic button letter' })),
       action: () => editor.chain().focus().toggleItalic().run(),
       isActive: () => editor.isActive('italic'),
       className: 'italic',
@@ -357,9 +384,13 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Strikethrough',
-      title: 'Toggle strikethrough',
-      icon: { name: 'strikethrough', fallback: 'S' },
+      label: l10n.t('Strikethrough'),
+      title: l10n.t('Toggle strikethrough'),
+      icon: letterIcon(
+        'strikethrough',
+        'S',
+        l10n.t({ message: 'S', comment: 'Strikethrough button letter' })
+      ),
       action: () => editor.chain().focus().toggleStrike().run(),
       isActive: () => editor.isActive('strike'),
       className: 'strike',
@@ -367,8 +398,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Inline code',
-      title: 'Toggle inline code',
+      label: l10n.t('Inline code'),
+      title: l10n.t('Toggle inline code'),
       icon: { name: 'code', fallback: '<>' },
       action: () => editor.chain().focus().toggleCode().run(),
       isActive: () => editor.isActive('code'),
@@ -377,48 +408,48 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Heading 1',
-      title: 'Toggle Heading 1',
-      icon: { fallback: 'H1' },
+      label: l10n.t('Heading 1'),
+      title: l10n.t('Toggle Heading 1'),
+      icon: { fallback: l10n.t({ message: 'H1', comment: 'Heading 1 button text' }) },
       action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
       isActive: () => editor.isActive('heading', { level: 1 }),
       requiresFocus: true,
     },
     {
       type: 'button',
-      label: 'Heading 2',
-      title: 'Toggle Heading 2',
-      icon: { fallback: 'H2' },
+      label: l10n.t('Heading 2'),
+      title: l10n.t('Toggle Heading 2'),
+      icon: { fallback: l10n.t({ message: 'H2', comment: 'Heading 2 button text' }) },
       action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
       isActive: () => editor.isActive('heading', { level: 2 }),
       requiresFocus: true,
     },
     {
       type: 'button',
-      label: 'Heading 3',
-      title: 'Toggle Heading 3',
-      icon: { fallback: 'H3' },
+      label: l10n.t('Heading 3'),
+      title: l10n.t('Toggle Heading 3'),
+      icon: { fallback: l10n.t({ message: 'H3', comment: 'Heading 3 button text' }) },
       action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
       isActive: () => editor.isActive('heading', { level: 3 }),
       requiresFocus: true,
     },
     {
       type: 'dropdown',
-      label: 'More headings',
-      title: 'More heading levels',
+      label: l10n.t('More headings'),
+      title: l10n.t('More heading levels'),
       icon: { name: 'text-size', fallback: 'H+' },
       requiresFocus: true,
       items: [
         {
-          label: 'Heading 4 (H4)',
+          label: l10n.t('Heading 4 (H4)'),
           action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(),
         },
         {
-          label: 'Heading 5 (H5)',
+          label: l10n.t('Heading 5 (H5)'),
           action: () => editor.chain().focus().toggleHeading({ level: 5 }).run(),
         },
         {
-          label: 'Heading 6 (H6)',
+          label: l10n.t('Heading 6 (H6)'),
           action: () => editor.chain().focus().toggleHeading({ level: 6 }).run(),
         },
       ],
@@ -426,8 +457,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     { type: 'separator' },
     {
       type: 'button',
-      label: 'Bullet list',
-      title: 'Toggle bullet list',
+      label: l10n.t('Bullet list'),
+      title: l10n.t('Toggle bullet list'),
       icon: { name: 'list-unordered', fallback: '•' },
       action: () => editor.chain().focus().toggleBulletList().run(),
       isActive: () => editor.isActive('bulletList'),
@@ -435,8 +466,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Numbered list',
-      title: 'Toggle numbered list',
+      label: l10n.t('Numbered list'),
+      title: l10n.t('Toggle numbered list'),
       icon: { name: 'list-ordered', fallback: '1.' },
       action: () => editor.chain().focus().toggleOrderedList().run(),
       isActive: () => editor.isActive('orderedList'),
@@ -444,8 +475,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Task list',
-      title: 'Toggle task list (checkboxes)',
+      label: l10n.t('Task list'),
+      title: l10n.t('Toggle task list (checkboxes)'),
       icon: { name: 'tasklist', fallback: '☐' },
       action: () => editor.chain().focus().toggleTaskList().run(),
       isActive: () => editor.isActive('taskList'),
@@ -454,56 +485,56 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     { type: 'separator' },
     {
       type: 'dropdown',
-      label: 'Table',
-      title: 'Insert and edit table',
+      label: l10n.t('Table'),
+      title: l10n.t('Insert and edit table'),
       icon: { name: 'table', fallback: 'Tbl' },
       requiresFocus: true,
       isActive: () => editor.isActive('table'),
       items: [
         {
-          label: 'Insert Table',
+          label: l10n.t('Insert Table'),
           icon: { name: 'add', fallback: '+' },
           action: () => showTableInsertDialog(editor),
           isEnabled: () => !editor.isActive('table'), // Only enabled when NOT in a table
         },
         {
-          label: 'Add Column Before',
+          label: l10n.t('Add Column Before'),
           icon: { name: 'arrow-left', fallback: '←' },
           action: () => editor.chain().focus().addColumnBefore().run(),
           isEnabled: () => editor.isActive('table'), // Only enabled when in a table
         },
         {
-          label: 'Add Column After',
+          label: l10n.t('Add Column After'),
           icon: { name: 'arrow-right', fallback: '→' },
           action: () => editor.chain().focus().addColumnAfter().run(),
           isEnabled: () => editor.isActive('table'),
         },
         {
-          label: 'Delete Column',
+          label: l10n.t('Delete Column'),
           icon: { name: 'remove', fallback: '×' },
           action: () => editor.chain().focus().deleteColumn().run(),
           isEnabled: () => editor.isActive('table'),
         },
         {
-          label: 'Add Row Before',
+          label: l10n.t('Add Row Before'),
           icon: { name: 'arrow-up', fallback: '↑' },
           action: () => editor.chain().focus().addRowBefore().run(),
           isEnabled: () => editor.isActive('table'),
         },
         {
-          label: 'Add Row After',
+          label: l10n.t('Add Row After'),
           icon: { name: 'arrow-down', fallback: '↓' },
           action: () => editor.chain().focus().addRowAfter().run(),
           isEnabled: () => editor.isActive('table'),
         },
         {
-          label: 'Delete Row',
+          label: l10n.t('Delete Row'),
           icon: { name: 'trash', fallback: '–' },
           action: () => editor.chain().focus().deleteRow().run(),
           isEnabled: () => editor.isActive('table'),
         },
         {
-          label: 'Delete Table',
+          label: l10n.t('Delete Table'),
           icon: { name: 'trash', fallback: '✕' },
           action: () => editor.chain().focus().deleteTable().run(),
           isEnabled: () => editor.isActive('table'),
@@ -512,8 +543,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Quote',
-      title: 'Toggle block quote',
+      label: l10n.t('Quote'),
+      title: l10n.t('Toggle block quote'),
       icon: { name: 'quote', fallback: '"' },
       action: () => editor.chain().focus().toggleBlockquote().run(),
       isActive: () => editor.isActive('blockquote'),
@@ -521,14 +552,14 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'dropdown',
-      label: 'Alert',
-      title: 'Insert GitHub alert',
+      label: l10n.t('Alert'),
+      title: l10n.t('Insert GitHub alert'),
       icon: { name: 'info', fallback: '!' },
       requiresFocus: true,
       isActive: () => editor.isActive('githubAlert'),
       items: [
         {
-          label: ' Note',
+          label: ` ${l10n.t('Note')}`,
           icon: { name: 'info', fallback: 'ℹ' },
           action: () => {
             editor
@@ -539,14 +570,14 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
           },
         },
         {
-          label: ' Tip',
+          label: ` ${l10n.t('Tip')}`,
           icon: { name: 'lightbulb', fallback: '💡' },
           action: () => {
             editor.chain().focus().insertContent(`> [!TIP]\n> `, { contentType: 'markdown' }).run();
           },
         },
         {
-          label: ' Important',
+          label: ` ${l10n.t('Important')}`,
           icon: { name: 'megaphone', fallback: '📢' },
           action: () => {
             editor
@@ -557,7 +588,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
           },
         },
         {
-          label: ' Warning',
+          label: ` ${l10n.t('Warning')}`,
           icon: { name: 'warning', fallback: '⚠' },
           action: () => {
             editor
@@ -568,7 +599,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
           },
         },
         {
-          label: ' Caution',
+          label: ` ${l10n.t('Caution')}`,
           icon: { name: 'error', fallback: '🛑' },
           action: () => {
             editor
@@ -582,13 +613,13 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'dropdown',
-      label: 'Code block',
-      title: 'Insert code block',
+      label: l10n.t('Code block'),
+      title: l10n.t('Insert code block'),
       icon: { name: 'code', fallback: '{}' },
       requiresFocus: true,
       isActive: () => editor.isActive('codeBlock'),
       items: [
-        ['Plain Text', 'plaintext'],
+        [l10n.t('Plain Text'), 'plaintext'],
         ['JavaScript', 'javascript'],
         ['TypeScript', 'typescript'],
         ['Python', 'python'],
@@ -614,8 +645,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Link',
-      title: `Insert/edit link (${modKeyLabel}+K ${modKeyLabel}+L)`,
+      label: l10n.t('Link'),
+      title: l10n.t('Insert/edit link ({0}+K {0}+L)', modKeyLabel),
       icon: { name: 'link', fallback: '🔗' },
       action: () => showLinkDialog(editor),
       isActive: () => editor.isActive('link'),
@@ -623,8 +654,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Image',
-      title: 'Insert image',
+      label: l10n.t('Image'),
+      title: l10n.t('Insert image'),
       icon: { svg: INSERT_IMAGE_ICON_SVG, fallback: '📷' },
       action: () => {
         // Get vscode API from window (set in editor.ts)
@@ -643,8 +674,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'dropdown',
-      label: 'Mermaid',
-      title: 'Insert Mermaid diagram',
+      label: 'Mermaid', // l10n-ignore: product name
+      title: l10n.t('Insert Mermaid diagram'),
       icon: { name: 'pie-chart', fallback: 'Mer' },
       requiresFocus: true,
       items: MERMAID_TEMPLATES.map(template => ({
@@ -662,21 +693,21 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'dropdown',
-      label: 'Math',
-      title: `Insert math equation (${modKeyLabel}+Shift+E for display math)`,
+      label: l10n.t('Math'),
+      title: l10n.t('Insert math equation ({0}+Shift+E for display math)', modKeyLabel),
       icon: { svg: MATH_RADICAL_ICON_SVG, fallback: '√x' },
       requiresFocus: true,
       isActive: () => editor.isActive('mathBlock') || editor.isActive('inlineMath'),
       items: [
         {
-          label: 'Display equation ($$…$$)',
+          label: l10n.t('Display equation ($$…$$)'),
           icon: { fallback: '∑' },
           action: () => {
             window.dispatchEvent(new CustomEvent('insertMath', { detail: { mode: 'block' } }));
           },
         },
         {
-          label: 'Inline equation ($…$)',
+          label: l10n.t('Inline equation ($…$)'),
           icon: { fallback: '𝑥' },
           action: () => {
             window.dispatchEvent(new CustomEvent('insertMath', { detail: { mode: 'inline' } }));
@@ -687,8 +718,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     { type: 'separator' },
     {
       type: 'button',
-      label: 'Outline',
-      title: 'Toggle Document Outline (TOC)',
+      label: l10n.t('Outline'),
+      title: l10n.t('Toggle Document Outline (TOC)'),
       icon: { name: 'list-tree', fallback: 'TOC' },
       action: () => {
         window.dispatchEvent(new CustomEvent('toggleTocOutline'));
@@ -698,8 +729,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Source',
-      title: 'Open source view (split)',
+      label: l10n.t('Source'),
+      title: l10n.t('Open source view (split)'),
       icon: { name: 'split-horizontal', fallback: '</>' },
       action: () => {
         window.dispatchEvent(new CustomEvent('openSourceView'));
@@ -710,9 +741,9 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     { type: 'separator' },
     {
       type: 'button',
-      label: 'Copy MD',
-      title: 'Copy selection as Markdown',
-      icon: { name: 'copy', fallback: 'Copy' },
+      label: l10n.t('Copy MD'),
+      title: l10n.t('Copy selection as Markdown'),
+      icon: { name: 'copy', fallback: l10n.t('Copy') },
       action: () => {
         window.dispatchEvent(new CustomEvent('copyAsMarkdown'));
       },
@@ -721,18 +752,18 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'dropdown',
-      label: 'Export',
-      title: 'Export document',
-      icon: { name: 'export', fallback: 'Export' },
+      label: l10n.t('Export'),
+      title: l10n.t('Export document'),
+      icon: { name: 'export', fallback: l10n.t('Export') },
       items: [
         {
-          label: 'Export as PDF',
+          label: l10n.t('Export as PDF'),
           action: () => {
             window.dispatchEvent(new CustomEvent('exportDocument', { detail: { format: 'pdf' } }));
           },
         },
         {
-          label: 'Export as Word',
+          label: l10n.t('Export as Word'),
           action: () => {
             window.dispatchEvent(new CustomEvent('exportDocument', { detail: { format: 'docx' } }));
           },
@@ -742,8 +773,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     { type: 'separator' },
     {
       type: 'button',
-      label: 'Audit',
-      title: 'Audit document for broken links and images',
+      label: l10n.t('Audit'),
+      title: l10n.t('Audit document for broken links and images'),
       icon: { name: 'shield', fallback: '🛡️' },
       action: () => {
         window.dispatchEvent(new CustomEvent('auditDocument'));
@@ -756,8 +787,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Extension settings',
-      title: 'Extension settings',
+      label: l10n.t('Extension settings'),
+      title: l10n.t('Extension settings'),
       icon: { name: 'gear', fallback: '⚙' },
       action: () => {
         window.dispatchEvent(new CustomEvent('openExtensionSettings'));
@@ -788,9 +819,12 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
 
       // Update title to explain why disabled
       if (feedbackTransitionLocked) {
-        element.title = (config.title || config.label) + ' (Feedback transition in progress)';
+        element.title = l10n.t(
+          '{0} (Feedback transition in progress)',
+          config.title || config.label
+        );
       } else if (!enabled && config.requiresFocus) {
-        element.title = (config.title || config.label) + ' (Click in document to edit)';
+        element.title = l10n.t('{0} (Click in document to edit)', config.title || config.label);
       } else {
         element.title = config.title || config.label;
       }
@@ -809,9 +843,12 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
 
       // Update title to explain why disabled
       if (feedbackTransitionLocked) {
-        element.title = (config.title || config.label) + ' (Feedback transition in progress)';
+        element.title = l10n.t(
+          '{0} (Feedback transition in progress)',
+          config.title || config.label
+        );
       } else if (!enabled && config.requiresFocus) {
-        element.title = (config.title || config.label) + ' (Click in document to edit)';
+        element.title = l10n.t('{0} (Click in document to edit)', config.title || config.label);
       } else {
         element.title = config.title || config.label;
       }
@@ -1030,6 +1067,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         feedbackControlsMounted = false;
       }
       toolbar.classList.remove('feedback-toolbar-active');
+      fitFeedbackToolbarLabels(toolbar);
       const starting = Boolean(state.starting);
       toolbar.setAttribute('aria-busy', String(starting));
       refreshActiveStates();
@@ -1055,14 +1093,14 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     const commentsVisible = commentsState !== 'hidden';
     const commentsExpanded = commentsState === 'expanded';
     const commentsLocked = commentsExpanded && Boolean(state.commentsLocked);
-    const commentsLabel = `Comments · ${count}`;
+    const commentsLabel = l10n.t('Comments · {0}', count);
     const commentsDescription = commentsLocked
-      ? `Comments remain open while adding feedback, ${count} saved`
+      ? l10n.t('Comments remain open while adding feedback, {0} saved', count)
       : commentsState === 'hidden'
-        ? `Show comments, ${count} saved`
+        ? l10n.t('Show comments, {0} saved', count)
         : commentsExpanded
-          ? `Hide expanded comments, ${count} saved`
-          : `Hide comments rail, ${count} saved`;
+          ? l10n.t('Hide expanded comments, {0} saved', count)
+          : l10n.t('Hide comments rail, {0} saved', count);
     const commentsIcon: ToolbarIcon =
       commentsState === 'hidden'
         ? { name: 'layout-sidebar-right-off', fallback: '◌' }
@@ -1078,7 +1116,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       document.activeElement.hasAttribute('data-feedback-start');
     const controls = [
       createFeedbackAction({
-        label: 'Finish & copy',
+        label: l10n.t('Finish & copy'),
         eventName: 'feedbackFinishRequested',
         icon: { name: 'check', fallback: '✓' },
         dataName: 'finish',
@@ -1088,15 +1126,15 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       }),
       createFeedbackAction({
         label: captureArmed
-          ? 'Cancel area capture'
+          ? l10n.t('Cancel area capture')
           : captureRasterizing
-            ? 'Preparing capture…'
-            : 'Capture area',
+            ? l10n.t('Preparing capture…')
+            : l10n.t('Capture area'),
         visibleLabel: captureArmed
-          ? 'Cancel capture'
+          ? l10n.t('Cancel capture')
           : captureRasterizing
-            ? 'Preparing capture…'
-            : 'Capture area',
+            ? l10n.t('Preparing capture…')
+            : l10n.t('Capture area'),
         eventName: captureArmed ? 'feedbackCaptureCancelRequested' : 'feedbackCaptureRequested',
         icon: captureArmed
           ? { name: 'close', fallback: '×' }
@@ -1121,15 +1159,15 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         disabled: closing || captureState !== 'idle',
       }),
       createFeedbackAction({
-        label: 'More feedback actions',
+        label: l10n.t('More feedback actions'),
         eventName: 'feedbackMoreRequested',
         icon: { name: 'ellipsis', fallback: '…' },
         dataName: 'more',
         disabled: closing || captureState !== 'idle',
       }),
       createFeedbackAction({
-        label: 'Discard Feedback draft (moves it to Trash)',
-        visibleLabel: 'Discard draft…',
+        label: l10n.t('Discard Feedback draft (moves it to Trash)'),
+        visibleLabel: l10n.t('Discard draft…'),
         eventName: 'feedbackDiscardRequested',
         icon: { name: 'trash', fallback: '×' },
         dataName: 'discard',
@@ -1141,7 +1179,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     feedbackGroup.className = 'feedback-toolbar-group';
     feedbackGroup.setAttribute('data-feedback-toolbar-group', '');
     feedbackGroup.setAttribute('role', 'group');
-    feedbackGroup.setAttribute('aria-label', 'Feedback session actions');
+    feedbackGroup.setAttribute('aria-label', l10n.t('Feedback session actions'));
     feedbackGroup.setAttribute('aria-busy', String(toolbarBusy));
     const moreMenuHost = document.createElement('div');
     moreMenuHost.className = 'feedback-more-menu-host';
@@ -1157,6 +1195,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     feedbackGroup.append(...controls.slice(0, 3), moreMenuHost, discardDivider, controls[4]);
     toolbar.replaceChildren(feedbackGroup);
     toolbar.classList.add('feedback-toolbar-active');
+    fitFeedbackToolbarLabels(toolbar);
     feedbackControlsMounted = true;
     if (focusedControl) {
       toolbar
@@ -1170,6 +1209,14 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
   };
 
   feedbackToolbarRenderFunction(feedbackToolbarState);
+
+  // The room for the Feedback labels changes with the editor width (split
+  // editors, side panels), not only when the toolbar is rendered.
+  const feedbackLabelFit =
+    typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(() => fitFeedbackToolbarLabels(toolbar));
+  feedbackLabelFit?.observe(toolbar);
 
   toolbarRefreshFunction = refreshActiveStates;
 
@@ -1228,6 +1275,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     if (feedbackToolbarRenderFunction) {
       feedbackToolbarRenderFunction = null;
     }
+    feedbackLabelFit?.disconnect();
   });
 
   refreshActiveStates();
@@ -1311,33 +1359,33 @@ export function createTableMenu(editor: Editor): HTMLElement {
       }
   > = [
     {
-      label: 'Add Row Before',
+      label: l10n.t('Add Row Before'),
       action: () => editor.chain().focus().addRowBefore().run(),
     },
     {
-      label: 'Add Row After',
+      label: l10n.t('Add Row After'),
       action: () => editor.chain().focus().addRowAfter().run(),
     },
     {
-      label: 'Delete Row',
+      label: l10n.t('Delete Row'),
       action: () => editor.chain().focus().deleteRow().run(),
     },
     { separator: true },
     {
-      label: 'Add Column Before',
+      label: l10n.t('Add Column Before'),
       action: () => editor.chain().focus().addColumnBefore().run(),
     },
     {
-      label: 'Add Column After',
+      label: l10n.t('Add Column After'),
       action: () => editor.chain().focus().addColumnAfter().run(),
     },
     {
-      label: 'Delete Column',
+      label: l10n.t('Delete Column'),
       action: () => editor.chain().focus().deleteColumn().run(),
     },
     { separator: true },
     {
-      label: 'Delete Table',
+      label: l10n.t('Delete Table'),
       action: () => editor.chain().focus().deleteTable().run(),
     },
   ];
