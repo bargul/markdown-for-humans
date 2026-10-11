@@ -18,22 +18,11 @@
 
 ## Why Markdown Editor for Humans
 
-- **Your file stays your file.** Blocks you do not edit keep their exact source on save, so Git diffs show only what you changed.
-- **Tables and images without syntax.** Edit tables visually; resize and rename images from the editor.
 - **Review what your AI agent wrote.** Comment on the rendered plan, then hand a sealed feedback file to Claude Code, Codex or any agent.
+- **Tables and images without syntax.** Edit tables visually; resize and rename images from the editor.
+- **Readable your way, in your language.** Set the font, spacing and zoom you read best in; the interface comes in six languages.
+- **Your file stays your file.** Blocks you do not edit keep their exact source on save, so Git diffs show only what you changed.
 - **Opt-in, never a takeover.** It opens only when you choose it, and you can make it your default for `.md` files.
-
----
-
-## Tables Without Pipes
-
-![Add a row with Tab, then insert a column from the right-click menu](https://raw.githubusercontent.com/concretios/markdown-for-humans/77fe1f0d8a388da2dd20ede7efb6065dc2e1f96a/marketplace-assets/gifs/v2/tables.gif)
-
-- **Tab** to the next cell; Tab in the last cell adds a row
-- **Right-click** any cell to insert or delete rows and columns
-- **Toolbar** controls for inserting and editing tables
-
-*Stop counting pipes and dashes.*
 
 ---
 
@@ -64,6 +53,18 @@ The document is locked while you review, so your comments always point at the so
 
 ---
 
+## Tables Without Pipes
+
+![Add a row with Tab, then insert a column from the right-click menu](https://raw.githubusercontent.com/concretios/markdown-for-humans/77fe1f0d8a388da2dd20ede7efb6065dc2e1f96a/marketplace-assets/gifs/v2/tables.gif)
+
+- **Tab** to the next cell; Tab in the last cell adds a row
+- **Right-click** any cell to insert or delete rows and columns
+- **Toolbar** controls for inserting and editing tables
+
+*Stop counting pipes and dashes.*
+
+---
+
 ## Images That Manage Themselves
 
 ![Resize an image from its menu; the original is backed up first](https://raw.githubusercontent.com/concretios/markdown-for-humans/77fe1f0d8a388da2dd20ede7efb6065dc2e1f96a/marketplace-assets/gifs/v2/image-resize.gif)
@@ -77,6 +78,38 @@ The document is locked while you review, so your comments always point at the so
 ![Hover for image details, then rename the file from the editor](https://raw.githubusercontent.com/concretios/markdown-for-humans/77fe1f0d8a388da2dd20ede7efb6065dc2e1f96a/marketplace-assets/gifs/v2/image-rename.gif)
 
 - **SVG:** local SVG files render as vectors and are never rewritten. **Image options > Display size** sets the width of one occurrence, saved as an HTML `<img width="…">`; unsized images stay ordinary Markdown. See [Known Issues](./KNOWN_ISSUES.md#svg-images) for SVG limits.
+
+---
+
+## Readable Your Way
+
+A reader with ADHD asked for font options ([issue 86](https://github.com/concretios/markdown-for-humans/issues/86)), so we built them. Set the text to what you read best in:
+
+- **Font:** any font installed on your computer, for body text and headings
+- **Weight and spacing:** font weight, line height, letter spacing and word spacing
+- **Size:** zoom the whole editor from 50% to 200%
+- **Or match your code editor:** one setting uses your VS Code editor font, including `"[markdown]"` overrides
+
+Changes apply at once to every open editor. Code blocks stay monospace, and math and diagrams keep their own fonts. All of it is under `markdownForHumans.font.*` and `markdownForHumans.zoom` in [Configuration](#configuration).
+
+---
+
+## Languages
+
+The editor follows your VS Code display language. Menus, dialogs, messages, command names and settings are available in:
+
+| Language | Display language to pick |
+| -------- | ------------------------ |
+| English | English |
+| 简体中文 (Chinese, Simplified) | 中文(简体) |
+| 日本語 (Japanese) | 日本語 |
+| Español (Spanish) | Español |
+| Português do Brasil (Portuguese, Brazil) | Português (Brasil) |
+| Русский (Russian) | Русский |
+
+- **Switch language:** run **Configure Display Language** from the Command Palette and pick one. Any other display language shows English.
+- **Word count** counts Chinese and Japanese text by character, the way word processors do.
+- **Help us get it right.** These translations were drafted and cross-checked by AI against VS Code's own wording, and no native speaker has reviewed them yet. If something reads wrong, or you want another language, see [Translations](./l10n/README.md) or [open an issue](https://github.com/concretios/markdown-for-humans/issues).
 
 ---
 
@@ -100,26 +133,6 @@ The document is locked while you review, so your comments always point at the so
 - **Export** to PDF or Word for people outside your repo. PDF export uses Chrome or Chromium on your machine; Word export has limits listed in [Known Issues](./KNOWN_ISSUES.md)
 - **Word count and reading time** in the status bar
 - **Theme aware:** follows your VS Code theme, fonts and font size
-- **Readable your way:** for accessibility, set the body font, weight, line height, letter spacing and word spacing you read best with
-
----
-
-## Languages
-
-The editor follows your VS Code display language. Menus, dialogs, messages, command names and settings are available in:
-
-| Language | Display language to pick |
-| -------- | ------------------------ |
-| English | English |
-| 简体中文 (Chinese, Simplified) | 中文(简体) |
-| 日本語 (Japanese) | 日本語 |
-| Español (Spanish) | Español |
-| Português do Brasil (Portuguese, Brazil) | Português (Brasil) |
-| Русский (Russian) | Русский |
-
-- **Switch language:** run **Configure Display Language** from the Command Palette and pick one. Any other display language shows English.
-- **Word count** counts Chinese and Japanese text by character, the way word processors do.
-- **Help us get it right.** These translations were drafted and cross-checked by AI against VS Code's own wording, and no native speaker has reviewed them yet. If something reads wrong, or you want another language, see [Translations](./l10n/README.md) or [open an issue](https://github.com/concretios/markdown-for-humans/issues).
 
 ---
 
@@ -157,6 +170,7 @@ Click the gear in the editor toolbar, or open Settings (`Ctrl+,` / `Cmd+,`) and 
 | `markdownForHumans.imageResize.skipWarning` | `false` | Resize images without the confirmation dialog |
 | `markdownForHumans.feedback.handoffPromptTemplate` | built-in prompt | Custom wording for the prompt copied by **Finish & copy**. Must include `{{feedbackFile}}`; see [Feedback Sessions](docs/FEEDBACK.md) |
 | `markdownForHumans.chromePath` | `""` | Chrome or Chromium used for PDF export; empty means auto-detect |
+| `markdownForHumans.zoom` | `100` | Size of everything in the editor, as a percentage from 50 to 200 |
 | `markdownForHumans.font.family` | `""` | Font for body text and headings: any font installed on your computer, for example `Atkinson Hyperlegible`. Code stays monospace; exports keep their own fonts |
 | `markdownForHumans.font.weight`, `.lineHeight`, `.letterSpacing`, `.wordSpacing` | `400`, `1.58`, `0`, `0` | Weight and spacing of body text. `font.useEditorFont` uses your VS Code editor font instead, including `"[markdown]"` overrides |
 
