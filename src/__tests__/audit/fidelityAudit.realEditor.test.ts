@@ -32,11 +32,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import MarkdownIt from 'markdown-it';
 import { Marked } from 'marked';
-import { Editor } from '@tiptap/core';
-import { ListKit } from '@tiptap/extension-list';
-import { TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
-import { Markdown } from '@tiptap/markdown';
-import StarterKit from '@tiptap/starter-kit';
+import type { Editor } from '@tiptap/core';
 import { buildFeedbackAnchorMap } from '../../editor/feedbackAnchors';
 import {
   FeedbackSnapshotService,
@@ -46,33 +42,15 @@ import {
   hasSameBlankLineLayout,
   isMarkdownRendererEquivalent,
 } from '../../editor/markdownAstEquivalence';
-import { BlankLinePreservation } from '../../webview/extensions/blankLinePreservation';
-import { CodeBlockWithCopy } from '../../webview/extensions/codeBlockWithCopy';
-import { CustomImage } from '../../webview/extensions/customImage';
-import { GitHubAlerts } from '../../webview/extensions/githubAlerts';
-import { HtmlComment, HtmlCommentInline } from '../../webview/extensions/htmlComment';
-import { HtmlPreservingTable } from '../../webview/extensions/htmlPreservingTable';
-import { IndentedImageCodeBlock } from '../../webview/extensions/indentedImageCodeBlock';
-import { HtmlKbd, HtmlSub, HtmlSup } from '../../webview/extensions/inlineHtmlMarks';
-import { InlineMath } from '../../webview/extensions/inlineMath';
-import { MarkdownCode, MarkdownLink } from '../../webview/extensions/markdownCompatibilityMarks';
-import { MarkdownListItem } from '../../webview/extensions/markdownListItem';
-import { MarkdownParagraph } from '../../webview/extensions/markdownParagraph';
-import { MarkdownTaskList } from '../../webview/extensions/markdownTaskList';
-import { MathBlock } from '../../webview/extensions/mathBlock';
-import { Mermaid } from '../../webview/extensions/mermaid';
-import { OrderedListMarkdownFix } from '../../webview/extensions/orderedListMarkdownFix';
-import { PreservedMarkdownLiteral } from '../../webview/extensions/preservedMarkdownLiteral';
-import { SpaceFriendlyImagePaths } from '../../webview/extensions/spaceFriendlyImagePaths';
-import { TableCellEnterHardBreak } from '../../webview/extensions/tableCellEnterHardBreak';
 import { enumerateCanonicalFeedbackBlocks } from '../../webview/features/feedbackReview';
-import { shouldAutoLink } from '../../webview/utils/linkValidation';
 import {
   getEditorMarkdownForSync,
   setMarkdownContentPreservingSource,
 } from '../../webview/utils/markdownSerialization';
-import { installBlankLineLexerNormalizer } from '../../webview/utils/markedLexerNormalizer';
 import { applyBlankLinePolicy, type BlankLineMode } from '../../shared/blankLinePolicy';
+import { describeSourceLoss } from '../../shared/sourceLoss';
+import { findFragileBlocks, renderForComparison } from '../../webview/utils/sourceFidelity';
+import { createProductionEditor } from '../helpers/productionEditor';
 import { FIDELITY_SAMPLES } from './fidelityCorpus';
 
 const EDIT = 'ZZQ';
@@ -90,73 +68,6 @@ const asWritten = (markdown: string): string =>
   `${applyBlankLinePolicy(markdown.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'), BLANK_LINES).replace(/\n+$/, '')}\n`;
 const save = (editor: Editor): string => asWritten(getEditorMarkdownForSync(editor, BLANK_LINES));
 const REPOSITORY_ROOT = resolve(__dirname, '../../..');
-
-/**
- * The parse and serialize extensions of `src/webview/editor.ts`, in its order.
- * Keyboard, drag and audit extensions are left out: they do not parse or save.
- */
-function createEditor(): Editor {
-  const element = document.createElement('div');
-  document.body.appendChild(element);
-  const editor = new Editor({
-    element,
-    extensions: [
-      InlineMath,
-      MathBlock,
-      Mermaid,
-      IndentedImageCodeBlock,
-      SpaceFriendlyImagePaths,
-      GitHubAlerts,
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4, 5, 6] },
-        paragraph: false,
-        code: false,
-        codeBlock: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-        listKeymap: false,
-        link: false,
-      }),
-      MarkdownParagraph,
-      HtmlComment,
-      HtmlCommentInline,
-      HtmlKbd,
-      HtmlSub,
-      HtmlSup,
-      MarkdownCode,
-      PreservedMarkdownLiteral,
-      CodeBlockWithCopy.configure({ workerUri: '', defaultLanguage: 'plaintext' }),
-      BlankLinePreservation,
-      Markdown.configure({ markedOptions: { gfm: true, breaks: true } }),
-      HtmlPreservingTable.configure({ resizable: false }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TableCellEnterHardBreak,
-      ListKit.configure({
-        listItem: false,
-        orderedList: false,
-        taskList: false,
-        taskItem: { nested: true },
-      }),
-      MarkdownTaskList,
-      MarkdownListItem,
-      OrderedListMarkdownFix,
-      MarkdownLink.configure({ openOnClick: false, shouldAutoLink }),
-      CustomImage,
-    ],
-    content: '',
-    contentType: 'markdown',
-  });
-  const storage = editor as unknown as {
-    markdown?: { instance?: unknown };
-    storage?: { markdown?: { instance?: unknown } };
-  };
-  const instance = storage.markdown?.instance ?? storage.storage?.markdown?.instance;
-  if (instance) installBlankLineLexerNormalizer(instance);
-  return editor;
-}
 
 const markdownIt = new MarkdownIt({ html: true, breaks: true, linkify: false });
 const squash = (html: string): string => html.replace(/\s+/g, ' ').replace(/> </g, '><').trim();
@@ -302,6 +213,16 @@ function feedbackOutcome(editor: Editor, source: string): string {
   }
 }
 
+/** What the loss scan says right after load, before any edit. */
+interface GuardPrediction {
+  /** The untouched document already lacks tags, comments or definitions. */
+  unheld: boolean;
+  /** A block would lose tags, comments or definitions if edited. */
+  fragileByName: boolean;
+  /** A block would lose those, or render differently, if edited. */
+  fragileByRendering: boolean;
+}
+
 interface AuditRow {
   category: string;
   name: string;
@@ -309,6 +230,7 @@ interface AuditRow {
   elsewhere: Outcome;
   inside: Outcome;
   feedback: string;
+  guard: GuardPrediction;
 }
 
 const TAIL = 'Tail paragraph.';
@@ -339,7 +261,13 @@ function auditSample(
 
   let elsewhere: Outcome = { verdict: 'n/a' };
   let inside: Outcome = { verdict: 'n/a' };
-  if (untouched.verdict === 'threw') return { untouched, elsewhere, inside, feedback };
+  const guard: GuardPrediction = { unheld: false, fragileByName: false, fragileByRendering: false };
+  if (untouched.verdict === 'threw') return { untouched, elsewhere, inside, feedback, guard };
+
+  // In a framed sample the title and the tail are plain text, so a fragile block is the sample's.
+  guard.unheld = describeSourceLoss(asWritten(source), save(editor)) !== null;
+  guard.fragileByName = findFragileBlocks(editor).length > 0;
+  guard.fragileByRendering = findFragileBlocks(editor, renderForComparison).length > 0;
 
   const spots = textSpots(editor);
   const lastBlock = editor.state.doc.childCount - 1;
@@ -361,7 +289,7 @@ function auditSample(
     if (isFrame) elsewhere = outcome;
     else inside = worse(inside, outcome);
   }
-  return { untouched, elsewhere, inside, feedback };
+  return { untouched, elsewhere, inside, feedback, guard };
 }
 
 function stripFrontmatter(markdown: string): string {
@@ -396,6 +324,27 @@ const summarize = (rows: AuditRow[]): Record<string, unknown> => ({
   feedback: tally(rows, row => (row.feedback === 'ok' ? 'ok' : row.feedback.split(':')[0])),
 });
 
+const LOSSY: Verdict[] = ['lost', 'changed', 'dialect'];
+
+/** How well the scan at load predicts what an edit inside the sample then does. */
+function guardAccuracy(rows: AuditRow[], pick: (guard: GuardPrediction) => boolean): object {
+  const counts = { caught: 0, missed: 0, falseAlarm: 0, quiet: 0 };
+  const missed: string[] = [];
+  const falseAlarm: string[] = [];
+  for (const row of rows) {
+    if (row.inside.verdict === 'n/a' || row.inside.verdict === 'threw') continue;
+    const lossy = LOSSY.includes(row.inside.verdict);
+    const flagged = pick(row.guard) || row.guard.unheld;
+    if (lossy && flagged) counts.caught += 1;
+    else if (lossy) missed.push(row.name);
+    else if (flagged) falseAlarm.push(`${row.name} (${row.inside.verdict})`);
+    else counts.quiet += 1;
+  }
+  counts.missed = missed.length;
+  counts.falseAlarm = falseAlarm.length;
+  return { ...counts, missed: missed.slice(0, 40), falseAlarms: falseAlarm.slice(0, 40), counts };
+}
+
 const isClean = (row: AuditRow): boolean =>
   row.untouched.verdict === 'identical' &&
   ['identical', 'n/a'].includes(row.elsewhere.verdict) &&
@@ -406,7 +355,7 @@ const audit = process.env.MD4H_FIDELITY_AUDIT ? describe : describe.skip;
 
 audit('source fidelity audit', () => {
   it('writes the fidelity report', () => {
-    const editor = createEditor();
+    const editor = createProductionEditor();
     const quiet = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     const quietError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
@@ -448,6 +397,7 @@ audit('source fidelity audit', () => {
           elsewhere,
           inside: { verdict: 'n/a' },
           feedback,
+          guard: { unheld: false, fragileByName: false, fragileByRendering: false },
         });
         for (const block of topLevelBlocks(body))
           if (!seenBlocks.has(block)) seenBlocks.set(block, file);
@@ -472,6 +422,12 @@ audit('source fidelity audit', () => {
           ),
           repositoryFiles: summarize(documents),
           repositoryBlocks: summarize(blocks),
+          guard: {
+            shapesByName: guardAccuracy(shapes, guard => guard.fragileByName),
+            shapesByRendering: guardAccuracy(shapes, guard => guard.fragileByRendering),
+            repositoryBlocksByName: guardAccuracy(blocks, guard => guard.fragileByName),
+            repositoryBlocksByRendering: guardAccuracy(blocks, guard => guard.fragileByRendering),
+          },
         },
         shapes,
         repositoryFiles: documents.filter(row => !isClean(row)),
