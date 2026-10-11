@@ -29,6 +29,16 @@ PDF export runs in a temporary incognito Chrome session, so remote images that n
 ### Task-item line breaks can lose text
 Text after a line break inside a task item can disappear on reopen (e.g. `- [ ] task\` with a backslash break). Avoid line breaks inside task items until fixed.
 
+### HTML the editor cannot keep
+The rich view has no place for some raw HTML. Two cases:
+
+- **Removed by any edit:** `<video>`, `<audio>`, `<iframe>`, inline `<svg>`, `<style>`, `<script>`, a standalone `<a name="...">` anchor, `<dl>` and `<figure>` with `<figcaption>`. The file is intact until you edit. A notice names the content and the editor stays read-only until you choose **Edit anyway**.
+- **Removed when you edit that block:** inline tags such as `<mark>`, `<u>`, `<ins>`, `<abbr>`, `<span>`, `<font>`, `<b>`, `<i>`, a `<br>` in a paragraph, `<a id>` and `<a target>`; and one-line blocks such as `<h1 align="center">`, `<div>`, `<center>`, `<p>`, `<pre><code>`. A notice names what was removed and offers **Undo**.
+
+Kept: comments, wrappers with blank lines around their content (`<div align="center">`, `<details>`), `<kbd>`, `<sub>`, `<sup>`, `<img>` and HTML tables. The first list was confirmed in VS Code for `<video>` and the anchor; the rest comes from automated tests outside VS Code.
+
+**Workaround:** Edit such content in the source view.
+
 ### HTML `<img>` resize drops attributes
 Resizing a hand-written HTML `<img>` rewrites the tag without other attributes (`align`, `class`, `style`).
 

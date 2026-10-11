@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **A warning before the editor drops Markdown it cannot keep.** Some source has no place in the rich view, for example `<video>`, `<iframe>` or a standalone `<a name="...">` anchor. When a file has such content, a notice names it and the editor stays read-only until you choose **Edit anyway** or open the source view, because any edit would remove it from the file. When you edit a block that holds HTML the editor cannot write back (`<mark>`, `<u>`, `<span>`, a `<br>` in a paragraph), the edit goes through and a notice names what was removed, with **Undo**. An edit that only changes how a block reads (a dropped `\*` escape, spaces inside a code span) shows a general notice once. The text was translated by AI for the five shipped languages.
+
 ### Fixed
 
 - Feedback starts on a document that has link reference definitions (`[label]: https://...`), such as a changelog with version links at the end. It refused to start with "Feedback could not match this document to the saved file". A comment on a definition points at that definition's own line.

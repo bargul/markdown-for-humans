@@ -4,7 +4,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for details.
  */
 
-import { describeSourceLoss, silentSourceTokens } from '../../shared/sourceLoss';
+import { describeSourceLoss, lostTokenNames, silentSourceTokens } from '../../shared/sourceLoss';
 
 describe('silentSourceTokens', () => {
   it('lists HTML tags, comments and link definitions in source order', () => {
@@ -81,5 +81,34 @@ describe('describeSourceLoss', () => {
       rendersDifferently: false,
     });
     expect(render).not.toHaveBeenCalled();
+  });
+});
+
+describe('lostTokenNames', () => {
+  it('names each kind of tag once, without attributes or closing tags', () => {
+    expect(
+      lostTokenNames([
+        '<video src="a.mp4" controls>',
+        '</video>',
+        '<mark>',
+        '</mark>',
+        '<mark>',
+        '<br/>',
+      ])
+    ).toEqual(['<video>', '<mark>', '<br>']);
+  });
+
+  it('names a closing tag that has no opening tag in the list', () => {
+    expect(lostTokenNames(['</details>'])).toEqual(['<details>']);
+  });
+
+  it('names comments and link definitions by their form', () => {
+    expect(
+      lostTokenNames(['<!-- a long note -->', '<!--\nx\n-->', '[Docs Site]: https://a.example "T"'])
+    ).toEqual(['<!-- -->', '[Docs Site]:']);
+  });
+
+  it('returns nothing for an empty list', () => {
+    expect(lostTokenNames([])).toEqual([]);
   });
 });

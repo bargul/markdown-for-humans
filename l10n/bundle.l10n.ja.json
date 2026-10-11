@@ -872,5 +872,10 @@
   "~{0} min read": "読了時間 約 {0} 分",
   "📊 Document Statistics": "📊 ドキュメントの統計情報",
   "Feedback is not ready because the editor has not finished loading. Try again in a moment, or reopen the editor if it stays blank.": "エディターの読み込みが完了していないため、フィードバックの準備ができていません。しばらくしてからもう一度試すか、エディターが空白のままの場合は開き直してください。",
-  "Feedback command could not be delivered. Reopen the editor and try again.": "フィードバック コマンドをエディターに送信できませんでした。エディターを開き直して、もう一度お試しください。"
+  "Feedback command could not be delivered. Reopen the editor and try again.": "フィードバック コマンドをエディターに送信できませんでした。エディターを開き直して、もう一度お試しください。",
+  "Edit anyway": "このまま編集",
+  "This edit changed how the block reads in the file, because the editor rewrote its Markdown.": "この編集により、ファイル内でのこのブロックの表示が変わりました。エディターが Markdown を書き換えたためです。",
+  "This edit removed {0} from the block, because the editor cannot keep it.": "この編集により、ブロックから {0} が削除されました。エディターが保持できないためです。",
+  "This edit removed {0} from the block, because the editor cannot keep them.": "この編集により、ブロックから {0} が削除されました。エディターがこれらを保持できないためです。",
+  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "このファイルには、エディターが保持できない内容が含まれています: {0}。ここで編集すると、その内容はファイルから削除されます。"
 }

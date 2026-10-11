@@ -81,3 +81,24 @@ export function describeSourceLoss(
   if (render && render(source) !== render(saved)) return { lost: [], rendersDifferently: true };
   return null;
 }
+
+/**
+ * Short names for lost tokens, to show to a user: `<video>` for any tag of
+ * that name, `<!-- -->` for a comment, `[label]:` for a link definition.
+ *
+ * @param lost - Tokens from {@link SourceLoss.lost}
+ * @returns Each distinct name once, in order of first appearance
+ */
+export function lostTokenNames(lost: readonly string[]): string[] {
+  const names = new Set<string>();
+  for (const token of lost) {
+    if (token.startsWith('<!--')) {
+      names.add('<!-- -->');
+    } else if (token.startsWith('<')) {
+      names.add(`<${/^<\/?([a-zA-Z][a-zA-Z0-9-]*)/.exec(token)?.[1] ?? ''}>`);
+    } else {
+      names.add(`${token.slice(0, token.indexOf(']:') + 1)}:`);
+    }
+  }
+  return [...names];
+}
