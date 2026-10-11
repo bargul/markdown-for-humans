@@ -62,7 +62,7 @@ import { hideTocOverlay, isTocVisible, toggleTocOverlay } from './features/tocOv
 import { hideSearchOverlay, isSearchVisible, showSearchOverlay } from './features/searchOverlay';
 import { showLinkDialog } from './features/linkDialog';
 import { processPasteContent, parseFencedCode } from './utils/pasteHandler';
-import { insertPlainText } from './utils/plainTextPaste';
+import { insertPlainText, readsAsMarkdown } from './utils/plainTextPaste';
 import { copySelectionAsMarkdown } from './utils/copyMarkdown';
 import { isUndoRedoShortcut } from './utils/undoRedoShortcut';
 import { shouldAutoLink } from './utils/linkValidation';
@@ -2226,7 +2226,18 @@ window.addEventListener('message', async (event: MessageEvent) => {
         // clipboard's text; VS Code keeps that chord from firing a paste event.
         if (!editor || typeof message.text !== 'string') break;
         if (isFeedbackEditingLocked() || isFocusInOwnField()) break;
-        insertPlainText(editor, message.text);
+        if (message.mode === undefined) {
+          // Text that would be read as Markdown on the next load is not
+          // inserted yet: the host asks how to paste it and sends it again
+          // with a mode.
+          if (readsAsMarkdown(editor, message.text)) {
+            vscode.postMessage({ type: 'pastePlainText.choose', text: message.text });
+          } else {
+            insertPlainText(editor, message.text);
+          }
+        } else if (['plain', 'code', 'markdown'].includes(message.mode)) {
+          insertPlainText(editor, message.text, message.mode);
+        }
         break;
       }
       case 'toggleTocOutlineView':

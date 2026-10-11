@@ -33,8 +33,12 @@ suite('Paste as Plain Text (Ext Host)', () => {
     assert.equal(commands.includes(COMMAND_ID), true);
   });
 
-  test('inserts the clipboard text as written and syncs it to the document', async function () {
-    this.timeout(90_000);
+  /**
+   * Put `clipboardText` on the clipboard, run the command against a new
+   * document until `expected` shows up in it, and return the document text.
+   * `pick` answers the choice the host offers for text that holds Markdown.
+   */
+  async function pasteIntoNewDocument(context, clipboardText, expected, pick) {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder, 'Expected integration fixture workspace');
@@ -44,13 +48,17 @@ suite('Paste as Plain Text (Ext Host)', () => {
     fs.writeFileSync(sourceUri.fsPath, 'Paste target.\n');
 
     const previousClipboard = await vscode.env.clipboard.readText();
-    // The text must reach the file as written, with no code block around it.
-    const pasted = `MarkdownEditorProvider ${Date.now()}`;
+    const originalShowQuickPick = vscode.window.showQuickPick;
+    const offered = [];
+    vscode.window.showQuickPick = async items => {
+      offered.push(items.map(item => item.mode));
+      return pick ? items.find(item => item.mode === pick) : undefined;
+    };
     try {
-      await vscode.env.clipboard.writeText(pasted);
-      if ((await vscode.env.clipboard.readText()) !== pasted) {
+      await vscode.env.clipboard.writeText(clipboardText);
+      if ((await vscode.env.clipboard.readText()) !== clipboardText) {
         // No usable system clipboard in this environment.
-        this.skip();
+        context.skip();
       }
 
       await vscode.commands.executeCommand('vscode.openWith', sourceUri, CUSTOM_EDITOR_VIEW_TYPE, {
@@ -63,7 +71,7 @@ suite('Paste as Plain Text (Ext Host)', () => {
       // The command has no readiness signal: a message posted before the
       // webview has built its editor is dropped. Repeat until a paste lands.
       const deadline = Date.now() + 45_000;
-      while (!document.getText().includes(pasted)) {
+      while (!document.getText().includes(expected)) {
         assert.ok(
           Date.now() < deadline,
           `Timed out waiting for the pasted text in the document: ${document.getText()}`
@@ -71,22 +79,42 @@ suite('Paste as Plain Text (Ext Host)', () => {
         await vscode.commands.executeCommand(COMMAND_ID);
         for (
           let waited = 0;
-          waited < 2_000 && !document.getText().includes(pasted);
+          waited < 2_000 && !document.getText().includes(expected);
           waited += 100
         ) {
           await sleep(100);
         }
       }
-
-      const text = document.getText();
-      assert.ok(text.includes('Paste target.'), `Existing text must survive: ${text}`);
-      assert.equal(text.includes('```'), false, `No code block may be created: ${text}`);
+      return { text: document.getText(), offered };
     } finally {
+      vscode.window.showQuickPick = originalShowQuickPick;
       await vscode.env.clipboard.writeText(previousClipboard);
       // A dirty document would stop closeAllEditors at a save prompt.
       await vscode.workspace.saveAll(false);
       await vscode.commands.executeCommand('workbench.action.closeAllEditors');
       fs.rmSync(temporary, { recursive: true, force: true });
     }
+  }
+
+  test('inserts the clipboard text as written and syncs it to the document', async function () {
+    this.timeout(90_000);
+    // The text must reach the file as written, with no code block around it.
+    const pasted = `MarkdownEditorProvider ${Date.now()}`;
+
+    const { text, offered } = await pasteIntoNewDocument(this, pasted, pasted);
+
+    assert.ok(text.includes('Paste target.'), `Existing text must survive: ${text}`);
+    assert.equal(text.includes('`'), false, `No code may be created: ${text}`);
+    assert.deepEqual(offered, [], 'Text without Markdown syntax must paste without a question');
+  });
+
+  test('asks how to paste text that holds Markdown syntax, and pastes it as code', async function () {
+    this.timeout(90_000);
+    const pasted = `**not bold** ${Date.now()}`;
+
+    const { text, offered } = await pasteIntoNewDocument(this, pasted, `\`${pasted}\``, 'code');
+
+    assert.ok(text.includes('Paste target.'), `Existing text must survive: ${text}`);
+    assert.deepEqual(offered[0], ['code', 'markdown', 'plain']);
   });
 });

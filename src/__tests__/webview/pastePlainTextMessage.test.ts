@@ -103,6 +103,7 @@ jest.mock('./../../webview/utils/pasteHandler', () => ({
 }));
 jest.mock('./../../webview/utils/plainTextPaste', () => ({
   insertPlainText: jest.fn(() => true),
+  readsAsMarkdown: jest.fn(() => false),
 }));
 jest.mock('./../../webview/utils/copyMarkdown', () => ({ copySelectionAsMarkdown: jest.fn() }));
 jest.mock('./../../webview/utils/outline', () => ({ buildOutlineFromEditor: jest.fn(() => []) }));
@@ -137,6 +138,8 @@ describe('pastePlainText host message', () => {
   let testing: TestingModule;
   let messageHandler: (event: { data: unknown }) => Promise<void>;
   let insertPlainText: jest.Mock;
+  let readsAsMarkdown: jest.Mock;
+  let postToHost: jest.Mock;
   let fakeDocument: FakeDocument;
   let insideEditor: FakeNode | null;
   const mockEditor = { view: { dom: { contains: (node: unknown) => node === insideEditor } } };
@@ -157,8 +160,9 @@ describe('pastePlainText host message', () => {
         }
       ),
     };
+    postToHost = jest.fn();
     (global as unknown as { acquireVsCodeApi: () => unknown }).acquireVsCodeApi = jest.fn(() => ({
-      postMessage: jest.fn(),
+      postMessage: postToHost,
       getState: jest.fn(),
       setState: jest.fn(),
     }));
@@ -170,6 +174,7 @@ describe('pastePlainText host message', () => {
     testing = mod.__testing as unknown as TestingModule;
     const pasteMod = await import('./../../webview/utils/plainTextPaste');
     insertPlainText = pasteMod.insertPlainText as jest.Mock;
+    readsAsMarkdown = pasteMod.readsAsMarkdown as jest.Mock;
 
     const handler = windowListeners.get('message');
     if (!handler) throw new Error('editor.ts did not register a message listener');
@@ -249,5 +254,46 @@ describe('pastePlainText host message', () => {
     await paste();
 
     expect(insertPlainText).not.toHaveBeenCalled();
+  });
+
+  describe('text that would be read as Markdown when the file is reopened', () => {
+    const asksHost = () =>
+      postToHost.mock.calls.filter(([message]) => message?.type === 'pastePlainText.choose');
+
+    beforeEach(() => readsAsMarkdown.mockReturnValue(true));
+
+    it('is not inserted; the host is asked how to paste it', async () => {
+      await paste();
+
+      expect(readsAsMarkdown).toHaveBeenCalledWith(mockEditor, 'plain text');
+      expect(insertPlainText).not.toHaveBeenCalled();
+      expect(asksHost()).toEqual([[{ type: 'pastePlainText.choose', text: 'plain text' }]]);
+    });
+
+    it.each(['plain', 'code', 'markdown'])(
+      'is inserted as %s once the host says so',
+      async mode => {
+        await messageHandler({ data: { type: 'pastePlainText', text: 'plain text', mode } });
+
+        expect(insertPlainText).toHaveBeenCalledWith(mockEditor, 'plain text', mode);
+        expect(readsAsMarkdown).not.toHaveBeenCalled();
+        expect(asksHost()).toEqual([]);
+      }
+    );
+
+    it('ignores a mode it does not know', async () => {
+      await messageHandler({ data: { type: 'pastePlainText', text: 'plain text', mode: 'html' } });
+
+      expect(insertPlainText).not.toHaveBeenCalled();
+      expect(asksHost()).toEqual([]);
+    });
+
+    it('does not ask while focus is in the search box', async () => {
+      fakeDocument.activeElement = focused('input');
+
+      await paste();
+
+      expect(asksHost()).toEqual([]);
+    });
   });
 });
