@@ -33,6 +33,7 @@
 
 **Success criteria:**
 - Ctrl+Shift+V (Cmd+Shift+V on macOS) inserts the clipboard's plain text at the caret: no formatting from the clipboard, no automatic code block, no Markdown conversion, no HTML conversion.
+- Limit found during the work: "no Markdown conversion" holds at paste time, not across a reload. See section 8.
 - Line breaks are kept: one newline is a line break, a blank line starts a new paragraph.
 - The paste is one undo step.
 - Ctrl/Cmd+V is unchanged, except that a single line copied from a VS Code editor now lands as inline text.
@@ -62,13 +63,14 @@
 | Paragraph, list item, blockquote | The text. Each single newline becomes a line break in the same paragraph. One or more blank lines start a new paragraph (a run of blank lines counts as one). |
 | Heading | The first line joins the heading. Every further line becomes a paragraph below it, because a Markdown heading cannot hold a line break. |
 | Code block | The text exactly as it is, newlines included. A fenced block in the clipboard is not unwrapped (Ctrl/Cmd+V unwraps it). |
-| Table cell | The text stays in that cell. Every newline becomes a line break (`<br>` in the saved table). No rows, cells or paragraphs are added; tabs stay as characters. |
+| Table cell | The text stays in that cell. Every newline becomes a line break (`<br>` in the saved table). No rows, cells or paragraphs are added, and a tab does not move to the next cell. |
 
 - A selection is replaced by the pasted text.
 - The pasted text takes the formatting at the caret (pasting inside bold text gives bold text), as "paste and match style" does elsewhere. Nothing is taken from the clipboard's HTML.
 - Leading and trailing newlines are dropped, except inside a code block.
 - Windows line endings are read as plain newlines.
 - Markdown syntax in the text stays literal on screen: `**bold**` shows as asterisks. No input rules or paste rules run.
+- The file gets the text as written. The serializer does not escape prose, so Markdown syntax in pasted text is read as Markdown the next time the file is loaded (listed in `KNOWN_ISSUES.md`).
 - Nothing happens when the clipboard has no text (for example an image), while Feedback has the document locked, or while focus is in the search box, the link dialog, the math editor or another input.
 
 **Behavior rule (normal paste):**
@@ -124,6 +126,7 @@ insertPlainText(editor, text): one ProseMirror transaction
 - `src/webview/editor.ts`: handle the `pastePlainText` message with the Feedback lock and focus guards.
 - `src/webview/utils/pasteHandler.ts`: `getSingleLineEditorCopy(clipboardData)`.
 - `src/webview/extensions/codeBlockWithCopy.ts`: a paste plugin placed before TipTap's inherited one that inserts a single-line VS Code copy as plain text.
+- `test/integration/pastePlainText.extHost.test.cjs` (new): runs the command in a real Extension Development Host.
 
 **Performance considerations:**
 - One clipboard read and one transaction per paste. Nothing is added to the typing path.
@@ -133,25 +136,26 @@ insertPlainText(editor, text): one ProseMirror transaction
 ## 6. Work Breakdown
 
 - [x] **Research** - keybinding path, clipboard access, root cause of the code block
-- [ ] **Tests first**
-  - [ ] `plainTextPaste.realEditor.test.ts`: single line, rich clipboard text, Markdown and HTML syntax kept literal, multi-line, heading, code block, table cell, selection, undo, read-only, empty text
-  - [ ] `pasteVsCodeIdentifier.realEditor.test.ts`: the issue's symptom through a real paste event; multi-line copy unchanged
-  - [ ] `pastePlainTextCommand.test.ts`: manifest entry, keybinding, host routing
-  - [ ] `pastePlainTextMessage.test.ts`: webview message routing and guards
-  - [ ] `pasteHandler.test.ts`: `getSingleLineEditorCopy`, VS Code clipboard classification
-- [ ] **Implementation**
-- [ ] **Docs** - `CHANGELOG.md`, `README.md`
+- [x] **Tests first**
+  - [x] `plainTextPaste.realEditor.test.ts` (21): single line, selection, rich clipboard, Markdown and HTML syntax kept literal, saved form, formatting at the caret, line breaks, list item, heading, code block, table cell, undo, empty text, read-only
+  - [x] `pasteVsCodeIdentifier.realEditor.test.ts` (13): the issue's symptom through a real paste event on macOS and Windows clipboard shapes, whole-line copy, undo, multi-line copy unchanged, paste into a code block, `getSingleLineEditorCopy`
+  - [x] `pastePlainTextCommand.test.ts` (6): manifest entry, keybinding, host routing, empty clipboard, read failure
+  - [x] `pastePlainTextMessage.test.ts` (12): webview message routing, focus and Feedback guards
+  - [x] `pastePlainText.extHost.test.cjs` (2): command registered; clipboard text reaches the document through the shipped webview
+- [x] **Implementation**
+- [x] **Docs** - `CHANGELOG.md`, `README.md`, `KNOWN_ISSUES.md`
 - [ ] **Manual check at a real keyboard** (section 7)
 
 ---
 
 ## 7. Implementation Log
 
-### 2026-10-11 – Research
+### 2026-10-11 – Research, tests, implementation
 
-- **What:** research done, plan written. Tests and implementation follow.
-- **Symptom:** the issue's code block symptom was still present on `main`. The July paste rework did not fix it; the cause is TipTap's inherited VS Code paste plugin, not the HTML classification.
-- **Not verified in a real VS Code window:** this session was told not to launch VS Code or use computer use, and a keyboard chord cannot be automated in the Extension Host tests. The Jest suites cover the host command, the message, and the insertion. The keystroke reaching the command is covered only by reading VS Code's source.
+- **What:** everything in section 6 except the manual check.
+- **Symptom:** the issue's code block symptom was still present on `main`. The July paste rework did not fix it; the cause is TipTap's inherited VS Code paste plugin, not the HTML classification. The new test failed on `main` with `Hello`, a code block, ` world`.
+- **Verified in a real host:** `npm run test:integration` on VS Code 1.141.0 (darwin-arm64) and on the 1.98.0 floor. The new suite runs the command the keybinding runs: the host reads the system clipboard, the shipped webview inserts the text, and the edit reaches the `TextDocument` with no code block.
+- **Not verified:** the keystroke itself. This session was told not to launch VS Code windows by hand or use computer use, and the Extension Host API cannot press keys. That the chord reaches the command rests on VS Code's source (section 5) and on the existing `ctrl+alt+b` binding, which uses the same forwarding.
 
 **Manual checklist (macOS and Windows):**
 1. Copy formatted text from a web page (bold, a link, a heading). Cmd/Ctrl+Shift+V in a paragraph: plain text, no formatting. Cmd/Ctrl+V: still formatted.
@@ -169,6 +173,14 @@ insertPlainText(editor, text): one ProseMirror transaction
 
 ## 8. Decisions & Tradeoffs
 
+- **Markdown syntax is literal only until the file is reloaded.** The production serializer (`escapeMarkdownSyntaxForProse` in `markdownSerialization.ts`) deliberately does not escape prose, so pasted `**bold**` is saved as `**bold**` and is bold when the file is next opened. This is the same limit as "Escaped Markdown characters" in `KNOWN_ISSUES.md`. Built as specified (literal at paste time). The alternatives are a product call:
+
+  | Option | Pasted `**bold**` | Cost |
+  | --- | --- | --- |
+  | 1. As built | Asterisks now, bold after reopen | None. Screen and file disagree until reload. |
+  | 2. Read Markdown at paste time | Bold now and after reopen | A few lines. Ctrl+Shift+V then only drops HTML formatting and the code block. This is what Typora and Obsidian do. |
+  | 3. Escape on save | Asterisks always | Serializer work. Backslash escapes stop Feedback from starting (known issue); entities make the source hard to read. |
+
 - **Line breaks:** a single newline becomes a line break, not a new paragraph. This matches how the editor reads a single newline in a file today (`breaks: true`) and how Markdown-looking pastes are handled. ProseMirror's own plain paste would make every line a paragraph and drop the difference between a line break and a blank line.
 - **Own transaction, not `view.pasteText`:** ProseMirror's paste path marks the transaction as a paste, which runs TipTap's paste rules and would turn `**bold**` into bold text.
 - **`closeHistory`:** ProseMirror merges changes made within 500 ms into one undo step. Without it, undo after "type, then paste at once" would also remove the typing.
@@ -181,7 +193,8 @@ insertPlainText(editor, text): one ProseMirror transaction
 
 ## 9. Follow-up & Future Work
 
-- Text that starts a line with `#`, `-`, `>` or `1.` stays literal on screen after a plain paste but is saved without an escape, so it reads as a heading or list when the file is reopened. This is how the serializer treats any literal text today; inline syntax (`**`, backticks, brackets, HTML tags) is escaped correctly.
+- Decide between options 1, 2 and 3 in section 8.
+- A fenced block pasted as plain text into a paragraph is saved with two trailing spaces on each line (the line breaks), which end up inside the code when the file is reopened.
 - Multi-line prose copied from a `.md` file open in VS Code's text editor still pastes as a `markdown` code block when it has no Markdown syntax.
 - Code copied from VS Code that contains `*` pairs (`a * b * c`) is read as Markdown emphasis by normal paste.
 - Browser-hosted VS Code: honor Shift on the native paste event.

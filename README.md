@@ -95,6 +95,7 @@ The document is locked while you review, so your comments always point at the so
 
 - **Document outline** to jump between headings in long documents
 - **In-document search** with match highlighting
+- **Paste as plain text** with `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS): the clipboard's text with no formatting and no Markdown conversion
 - **Export** to PDF or Word for people outside your repo. PDF export uses Chrome or Chromium on your machine; Word export has limits listed in [Known Issues](./KNOWN_ISSUES.md)
 - **Word count and reading time** in the status bar
 - **Theme aware:** follows your VS Code theme, fonts and font size

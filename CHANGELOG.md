@@ -11,12 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - **ABAP syntax highlighting for code blocks.** ` ```abap ` fences are highlighted (keywords, strings, comments), and ABAP is available in the code block language menu. `sap-abap` works as a fence alias. The grammar comes from the community `highlightjs-sap-abap` package, since highlight.js itself ships no ABAP grammar.
+- **Paste as plain text.** `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS) pastes the clipboard's text as written: formatting from the source is dropped, nothing is converted from HTML or Markdown, and no code block is created. Line breaks are kept, and one undo removes the paste. The command, **Markdown Editor for Humans: Paste as Plain Text**, is in the Command Palette and can be rebound in Keyboard Shortcuts. Markdown syntax in the pasted text is read as Markdown when the file is reopened; see [Known Issues](./KNOWN_ISSUES.md).
 
 ### Fixed
 
 - A link to another Markdown file opens in this editor. It opened in VS Code's text editor, even when this editor was your default for Markdown.
 - Links that carry a section (`guide.md#install`) or encoded characters (`my%20notes.md`) open the file. They reported "File not found".
 - C# is in the code block language menu. C# code was already highlighted, but the menu did not offer it.
+- A word or single line copied from a VS Code code editor pastes as text inside the sentence. It was pasted as a code block that split the paragraph.
 
 ---
 
