@@ -202,6 +202,13 @@ webview: toast
 - **Changed as a result:** the README no longer suggests a shortcut; the `@` button moved beside the Feedback button.
 - **Not answered in that run:** the Command Palette entry, the tooltip text, light theme.
 
+### 2026-10-11 - Complex document round, merged main after PR 159
+
+- **Fixture:** `src/__tests__/fixtures/aiReferenceComplex.md`, 226 lines. Every text line carries its own source line as `(L<n>)` at both ends, so the expected answer for any caret is read from the rendered text. It has lists nested three deep, a loose list holding code and a quote, task lists, quotes with lists, three alerts, an aligned table with formatting and an escaped pipe, a compact table, backtick, tilde and four-backtick fences, both kinds of hard break, blank-line runs, inline HTML, a comment and a link definition.
+- **Jest, every caret position:** 4,555 positions, 4,490 exact, none wrong. The other 65 are one line with inline HTML, whose editor extension is not loaded in the test harness; they give no line.
+- **Real VS Code 1.141.0 window, every sixth position:** 804 carets with a stated line, 801 matched it, none gave no line, and all 129 numbered lines were verified, the inline HTML line included. The 3 others were looked at one by one: two are lines that carry no number (the frontmatter's opening `---` and a bare fence line inside a code block) and were copied correctly; one is a position between two list items, where no text caret can sit, and it copied the following item's line.
+- **Merge:** origin/main `d55549c` (PR 159, paste as plain text). Nine conflicts, all two-sided additions, resolved by keeping both. Lint clean; `npx jest`: 250 suites, 4,971 tests passed, none failed.
+
 ---
 
 ## 8. Decisions & Tradeoffs
