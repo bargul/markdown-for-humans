@@ -361,6 +361,21 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         window.dispatchEvent(new CustomEvent('feedbackStartRequested'));
       },
     },
+    {
+      type: 'button',
+      label: l10n.t('Copy AI reference'),
+      title: l10n.t({
+        message: 'Copy reference for AI ({0})',
+        args: ['@file#L10-14'],
+        comment: 'Toolbar tooltip. {0} is an example of the copied text, such as @file#L10-14',
+      }),
+      icon: { name: 'mention', fallback: '@' },
+      action: () => {
+        window.dispatchEvent(new CustomEvent('copyReferenceForAi'));
+      },
+      isActive: () => false,
+      className: 'copy-reference-button',
+    },
     { type: 'separator' },
     {
       type: 'button',

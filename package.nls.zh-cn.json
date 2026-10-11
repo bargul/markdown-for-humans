@@ -4,6 +4,7 @@
   "command.outline.filter.title": "大纲：筛选标题",
   "command.outline.clearFilter.title": "大纲：清除筛选",
   "command.toggleFormattingShortcuts.title": "Markdown Editor for Humans：切换格式快捷键 (Cmd/Ctrl+B/I/U)",
+  "command.copyReferenceForAi.title": "Markdown Editor for Humans：复制供 AI 使用的引用",
   "command.pastePlainText.title": "Markdown Editor for Humans：粘贴为纯文本",
   "command.feedback.start.title": "Markdown Editor for Humans：开始反馈",
   "command.feedback.commentSelection.title": "Markdown Editor for Humans：为所选内容添加反馈",

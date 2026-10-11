@@ -109,6 +109,8 @@ import {
   type FeedbackSnapshotIdentity,
   type FeedbackSplitSnapshotReport,
 } from './feedbackSnapshotService';
+import { aiReferencePath, formatAiReference, resolveAiReferenceLines } from './aiReference';
+import { parseAiReferenceRequest } from '../shared/aiReferenceProtocol';
 import {
   FeedbackTransport,
   type FeedbackAcknowledgementDisposition,
@@ -2105,6 +2107,78 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       case 'auditPickFile':
         void this.handleAuditPickFile(message, document, webview);
         break;
+      case 'copyReferenceForAi':
+        void this.handleCopyReferenceForAi(message, document, webview);
+        break;
+    }
+  }
+
+  /**
+   * Copy `@path#L10-14` for the rich view's caret or selection.
+   *
+   * The reference must match what an agent reads from disk, so unsaved changes
+   * are saved first and the lines are then read from the saved text. While
+   * Feedback has the document frozen at its saved bytes this stays read only.
+   * The result goes back to the view, which shows it as a toast.
+   */
+  private async handleCopyReferenceForAi(
+    message: { type: string; [key: string]: unknown },
+    document: vscode.TextDocument,
+    webview: vscode.Webview
+  ): Promise<void> {
+    const reply = (ok: boolean, text: string): void => {
+      void webview.postMessage({ type: 'copyReferenceForAi.result', ok, message: text });
+    };
+
+    try {
+      const request = parseAiReferenceRequest(message);
+      if (!request) {
+        reply(false, vscode.l10n.t('Could not copy a reference for AI.'));
+        return;
+      }
+      if (document.uri.scheme === 'untitled') {
+        reply(
+          false,
+          vscode.l10n.t('Save this file first. An untitled document has no path to reference.')
+        );
+        return;
+      }
+
+      const documentKey = document.uri.toString();
+      const frozen =
+        this.feedbackSessions.has(documentKey) || this.feedbackTransitions.has(documentKey);
+      const wasDirty = document.isDirty;
+      if (frozen ? wasDirty : !(await this.flushAndSaveIfDirty(document, webview))) {
+        reply(false, vscode.l10n.t('Not copied: the file has changes that could not be saved.'));
+        return;
+      }
+
+      const lines = resolveAiReferenceLines(document.getText(), request.blocks, request.selection);
+      const reference = formatAiReference(
+        aiReferencePath(
+          document.uri.fsPath,
+          vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath
+        ),
+        lines
+      );
+      await vscode.env.clipboard.writeText(reference);
+
+      if (!lines) {
+        reply(
+          true,
+          vscode.l10n.t(
+            'Copied {0} without line numbers: this spot could not be matched to the saved file.',
+            reference
+          )
+        );
+      } else if (wasDirty) {
+        reply(true, vscode.l10n.t('Saved the file and copied {0}', reference));
+      } else {
+        reply(true, vscode.l10n.t('Copied {0}', reference));
+      }
+    } catch (error) {
+      console.error('[MD4H] Copy Reference for AI failed:', error);
+      reply(false, vscode.l10n.t('Could not copy a reference for AI.'));
     }
   }
 

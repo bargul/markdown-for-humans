@@ -214,7 +214,8 @@ describe('BubbleMenuView', () => {
       const editor = createMockEditor();
       const toolbar = createFormattingToolbar(editor);
 
-      // Retired Copy AI Reference toolbar control must stay gone; Feedback is first.
+      // The retired @ control stays gone and Feedback is first. Copy Reference for AI
+      // sits right after it (toolbarCopyReferenceButton.test.ts).
       expect(toolbar.querySelector('.copy-ai-ref-button')).toBeNull();
 
       const start = toolbar.querySelector<HTMLButtonElement>('[data-feedback-start]');

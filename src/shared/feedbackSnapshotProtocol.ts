@@ -102,7 +102,15 @@ function hasIdentity(record: Record<string, unknown>): boolean {
   );
 }
 
-function parseBlocks(value: unknown): readonly CanonicalFeedbackBlock[] | null {
+/**
+ * Validate untrusted canonical block descriptors from a rich view.
+ *
+ * @param value - Raw `blocks` value
+ * @returns The descriptors in document order, or null when malformed, empty or over the size limits
+ */
+export function parseCanonicalFeedbackBlocks(
+  value: unknown
+): readonly CanonicalFeedbackBlock[] | null {
   if (!Array.isArray(value) || value.length === 0 || value.length > MAX_BLOCKS) return null;
 
   let previousOrdinal = -1;
@@ -270,7 +278,7 @@ export function parseFeedbackSnapshotReport(value: unknown): FeedbackSnapshotRep
   ) {
     return null;
   }
-  const blocks = hasBlocks ? parseBlocks(value.blocks) : undefined;
+  const blocks = hasBlocks ? parseCanonicalFeedbackBlocks(value.blocks) : undefined;
   if (hasBlocks && blocks === null) return null;
 
   return {

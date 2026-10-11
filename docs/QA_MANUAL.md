@@ -343,6 +343,21 @@ Hover an image to reveal a **three-dots** menu, with:
 
 - Clipboard contains Markdown representing the selection (not HTML).
 
+### 5.12a Copy Reference for AI
+
+**How to use**
+
+- Place the caret, or select a range, then Toolbar → “@”, the second button, beside Log feedback for an LLM (or Command Palette → “Copy Reference for AI”) → paste into a plain text buffer.
+- Repeat with the caret in: a hard-wrapped paragraph, a nested list item, a table cell, a line of a code block, frontmatter.
+- Repeat with unsaved changes, in an untitled file, and while Feedback is active.
+
+**Expected**
+
+- Clipboard contains `@<workspace-relative path>#L<line>` or `#L<start>-<end>`, and each number is the line shown in the source view.
+- A table cell gives the row's line; a code block gives the code line, not the fence.
+- Unsaved changes are saved first and the toast says so. An untitled file is refused with a message. During Feedback the file is not saved or changed.
+- A toast shows the copied reference. No dialog opens.
+
 ### 5.13 Pasting code: copy button vs. copying from a source file
 
 This is **intentional, non-configurable behavior** — the editor's paste handling looks at what the clipboard actually contains, not a user setting, so the same paste action can produce different results depending on where the content was copied from. Both outcomes below are correct.
