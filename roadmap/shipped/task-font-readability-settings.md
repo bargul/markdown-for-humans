@@ -4,10 +4,10 @@
 
 - **Task name:** Font and readability settings for body text
 - **Slug:** font-readability-settings
-- **Status:** in-progress
+- **Status:** shipped
 - **Created:** 2026-10-11
 - **Last updated:** 2026-10-11
-- **Shipped:** _(pending)_
+- **Shipped:** 2026-10-11 (0.4.4)
 - **Issues:** #86 (font options, ADHD reader), #15 (respect `"[markdown]"` editor settings), #27 last comment (size)
 
 ---
