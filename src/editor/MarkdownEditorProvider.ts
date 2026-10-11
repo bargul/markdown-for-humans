@@ -10326,7 +10326,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
   }
 
   /**
-   * Handle file link navigation (open file in VS Code)
+   * Handle file link navigation (open file in VS Code).
+   *
+   * Markdown targets open in this editor; images and other files open in VS
+   * Code's own viewer or text editor. A `#fragment` or `?query` on the link is
+   * ignored when locating the file.
    */
   private async handleOpenFileLink(
     message: { type: string; [key: string]: unknown },
@@ -10341,38 +10345,23 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         return;
       }
 
-      // Resolve relative path from current document
+      // Resolve relative path from current document, then from the workspace root
       const basePath = path.dirname(document.uri.fsPath);
+      const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
-      // Normalize path: remove ./ prefix if present for path resolution
-      const normalizedFilePath = filePath.startsWith('./') ? filePath.slice(2) : filePath;
-      const absolutePath = path.resolve(basePath, normalizedFilePath);
-      let fileUri = vscode.Uri.file(absolutePath);
-      console.warn('[MD4H] Resolved file URI (document-relative):', fileUri.fsPath);
-
-      // Check if file exists
+      let fileUri = vscode.Uri.file(path.resolve(basePath, filePath));
       let fileExists = false;
-      try {
-        await vscode.workspace.fs.stat(fileUri);
-        fileExists = true;
-        console.warn('[MD4H] File exists (document-relative):', fileUri.fsPath);
-      } catch {
-        // File doesn't exist, try to find it in workspace
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (workspaceFolders && workspaceFolders.length > 0) {
-          // Try relative to workspace root
-          const workspacePath = workspaceFolders[0].uri.fsPath;
-          // Use normalized path (already normalized above)
-          const workspaceFileUri = vscode.Uri.file(path.resolve(workspacePath, normalizedFilePath));
-          console.warn('[MD4H] Trying workspace-relative path:', workspaceFileUri.fsPath);
+      candidates: for (const candidate of fileLinkPathCandidates(filePath)) {
+        for (const root of workspacePath ? [basePath, workspacePath] : [basePath]) {
+          const candidateUri = vscode.Uri.file(path.resolve(root, candidate));
           try {
-            await vscode.workspace.fs.stat(workspaceFileUri);
-            fileUri = workspaceFileUri;
+            await vscode.workspace.fs.stat(candidateUri);
+            fileUri = candidateUri;
             fileExists = true;
-            console.warn('[MD4H] File exists (workspace-relative):', fileUri.fsPath);
+            console.warn('[MD4H] File exists:', fileUri.fsPath);
+            break candidates;
           } catch {
-            // Not found in workspace either
-            console.warn('[MD4H] File not found in workspace-relative path');
+            // Not at this location; try the next one
           }
         }
       }
@@ -10413,6 +10402,14 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           console.error('[MD4H] Failed to open image file:', errorMessage, error);
           vscode.window.showErrorMessage(`Failed to open image file: ${errorMessage}`);
         }
+      } else if (fileExtension === '.md' || fileExtension === '.markdown') {
+        // A reader following a link between documents stays in this editor,
+        // whatever their default editor for Markdown is (issue #23).
+        await vscode.commands.executeCommand(
+          'vscode.openWith',
+          fileUri,
+          'markdownForHumans.editor'
+        );
       } else {
         // For text files, use openTextDocument
         console.warn('[MD4H] Attempting to open text file with openTextDocument');
@@ -11673,6 +11670,27 @@ function getNonce(): string {
 }
 
 /** Identify image filesystem paths without interpreting literal filename delimiters. */
+/**
+ * Paths to try for a clicked file link, most literal first.
+ *
+ * A Markdown link can carry a `#fragment` or `?query` and percent-encode
+ * characters such as spaces, while a file name can itself contain `#` or `%`.
+ * The authored text is therefore tried before its stripped and decoded forms.
+ */
+function fileLinkPathCandidates(href: string): string[] {
+  const authored = href.startsWith('./') ? href.slice(2) : href;
+  const withoutSuffix = authored.replace(/[?#].*$/, '');
+  const candidates = [authored, withoutSuffix];
+  for (const encoded of [withoutSuffix, authored]) {
+    try {
+      candidates.push(decodeURIComponent(encoded));
+    } catch {
+      // Malformed percent sequence: the authored forms are all there is
+    }
+  }
+  return [...new Set(candidates.filter(candidate => candidate.length > 0))];
+}
+
 function isImageFilePath(filePath: string): boolean {
   return /\.(?:png|jpe?g|gif|svg|webp|bmp|ico|tiff?)$/i.test(filePath);
 }
