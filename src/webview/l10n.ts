@@ -14,10 +14,13 @@
 
 import {
   L10N_BUNDLE_ATTRIBUTE,
+  escapeHtmlText,
   formatL10n,
+  l10nKey,
   parseL10nBundle,
   type L10nArgument,
   type L10nBundle,
+  type L10nMessageOptions,
 } from '../shared/l10n';
 
 let bundle: L10nBundle | undefined;
@@ -39,12 +42,35 @@ export function resetL10n(): void {
 /**
  * Translate a UI message.
  *
- * @param message - English source text; must be a string literal so it can be extracted
+ * @param message - English source text, or options carrying a translator comment.
+ *   Must be a string literal so it can be extracted.
  * @param args - Values for `{0}`, `{1}` placeholders
  * @returns The translation for the display language, or the English text
  */
-export function t(message: string, ...args: L10nArgument[]): string {
+export function t(message: string, ...args: L10nArgument[]): string;
+export function t(options: L10nMessageOptions): string;
+export function t(message: string | L10nMessageOptions, ...args: L10nArgument[]): string {
   // Read lazily: the host renders the bundle on <body> before any UI is built.
   bundle ??= parseL10nBundle(document.body?.getAttribute(L10N_BUNDLE_ATTRIBUTE));
-  return formatL10n(bundle[message] || message, args);
+  if (typeof message === 'string') return formatL10n(bundle[message] || message, args);
+  const translation = bundle[l10nKey(message.message, message.comment)];
+  return formatL10n(translation || message.message, message.args ?? []);
+}
+
+/**
+ * Translate a UI message for insertion into an HTML template.
+ *
+ * The whole result is escaped, arguments included, so neither a translation nor
+ * a file name can add markup. To wrap part of a sentence in markup, leave its
+ * placeholder without an argument and replace it afterwards:
+ * `l10n.html('Add {0} to see the outline').replace('{0}', '<code># Heading</code>')`.
+ *
+ * @param message - English source text, or options carrying a translator comment
+ * @param args - Values for `{0}`, `{1}` placeholders
+ * @returns Escaped text, safe inside markup and quoted attributes
+ */
+export function html(message: string, ...args: L10nArgument[]): string;
+export function html(options: L10nMessageOptions): string;
+export function html(message: string | L10nMessageOptions, ...args: L10nArgument[]): string {
+  return escapeHtmlText(typeof message === 'string' ? t(message, ...args) : t(message));
 }

@@ -3,104 +3,94 @@
  *
  * Licensed under the MIT License. See LICENSE file in the project root for details.
  *
- * Guards the translation bundles in `l10n/`:
- * - every `l10n.t(...)` call uses a string literal, so it can be extracted
- * - `bundle.l10n.json` (English) lists exactly the strings used in the code
- * - a locale bundle never keeps a string that the code no longer uses
- * - a translation keeps the placeholders of its English source
+ * Guards the translation bundles:
+ * - every translation call uses a message that can be extracted
+ * - `l10n/bundle.l10n.json` (English) lists exactly the messages used in the code
+ * - no locale bundle keeps a message the code no longer uses
+ * - a translation keeps the placeholders of its English source and adds no markup
+ * - a locale in `l10n/` (shipped) is complete; `l10n/drafts/` may be partial
+ *
+ * `npm run l10n:extract` runs this file with L10N_WRITE=1 to rewrite the
+ * English bundle from the code.
  */
 
-import { readFileSync, readdirSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import * as path from 'path';
-import * as ts from 'typescript';
+import {
+  bundleRoot,
+  extractMessages,
+  placeholders,
+  readSourceFiles,
+  toEnglishBundle,
+} from './extraction';
 
-const repoRoot = path.resolve(__dirname, '../../..');
-const sourceRoot = path.join(repoRoot, 'src');
-const bundleRoot = path.join(repoRoot, 'l10n');
+const englishPath = path.join(bundleRoot, 'bundle.l10n.json');
+const draftRoot = path.join(bundleRoot, 'drafts');
+const writing = process.env.L10N_WRITE === '1';
 
-interface Extraction {
-  messages: Set<string>;
-  /** `file:line` of calls whose message is not a plain string literal. */
-  unextractable: string[];
+const extraction = extractMessages(readSourceFiles());
+const expectedEnglish = toEnglishBundle(extraction.messages);
+if (writing) writeFileSync(englishPath, `${JSON.stringify(expectedEnglish, null, 2)}\n`, 'utf8');
+
+function readJson(filePath: string): Record<string, unknown> {
+  return JSON.parse(readFileSync(filePath, 'utf8')) as Record<string, unknown>;
 }
 
-function sourceFiles(dir: string, found: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name !== '__tests__' && entry.name !== '__mocks__') sourceFiles(fullPath, found);
-    } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
-      found.push(fullPath);
-    }
-  }
-  return found;
+function localeFiles(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter(name => /^bundle\.l10n\..+\.json$/.test(name))
+    .map(name => path.join(dir, name));
 }
 
-function extractMessages(files: Array<{ name: string; text: string }>): Extraction {
-  const messages = new Set<string>();
-  const unextractable: string[] = [];
-  for (const { name, text } of files) {
-    if (!text.includes('l10n.t(')) continue;
-    const sourceFile = ts.createSourceFile(name, text, ts.ScriptTarget.Latest, true);
-    const visit = (node: ts.Node): void => {
-      if (ts.isCallExpression(node) && /(^|\.)l10n\.t$/.test(node.expression.getText(sourceFile))) {
-        const message = node.arguments[0];
-        if (
-          message &&
-          (ts.isStringLiteral(message) || ts.isNoSubstitutionTemplateLiteral(message))
-        ) {
-          messages.add(message.text);
-        } else {
-          const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-          unextractable.push(`${name}:${line + 1}`);
-        }
-      }
-      ts.forEachChild(node, visit);
-    };
-    visit(sourceFile);
-  }
-  return { messages, unextractable };
-}
-
-function readBundle(fileName: string): Record<string, string> {
-  return JSON.parse(readFileSync(path.join(bundleRoot, fileName), 'utf8')) as Record<
-    string,
-    string
-  >;
-}
-
-function placeholders(message: string): string[] {
-  return [...new Set(message.match(/\{\d+\}/g) ?? [])].sort();
-}
-
-const extraction = extractMessages(
-  sourceFiles(sourceRoot).map(file => ({
-    name: path.relative(repoRoot, file),
-    text: readFileSync(file, 'utf8'),
-  }))
-);
-const english = readBundle('bundle.l10n.json');
-const localeFiles = readdirSync(bundleRoot).filter(
-  name => /^bundle\.l10n\..+\.json$/.test(name) && name !== 'bundle.l10n.json'
-);
+const english = readJson(englishPath);
+const englishText = (key: string): string => {
+  const value = english[key];
+  return typeof value === 'string' ? value : (value as { message: string }).message;
+};
+const shipped = localeFiles(bundleRoot);
+const drafts = localeFiles(draftRoot);
+const label = (filePath: string): string => path.relative(bundleRoot, filePath);
 
 describe('message extraction', () => {
-  it('finds host and webview calls and reports messages it cannot extract', () => {
+  it('reads literals, plural choices and commented messages, and reports the rest', () => {
     const result = extractMessages([
       {
         name: 'sample.ts',
         text: [
           "vscode.l10n.t('Saved {0}', name);",
           "l10n.t('No results');",
-          'l10n.t(`Plain template`);',
+          'l10n.html(`Plain template`);',
+          "l10n.t(count === 1 ? '{0} comment' : '{0} comments', count);",
+          "l10n.t({ message: 'Quote', comment: 'Block quote button' });",
+          "vscode.l10n.t({ message: 'B', args: [], comment: ['Bold letter.', ' One character.'] });",
           'l10n.t(`Found ${count} results`);',
           "l10n.t('Count: ' + count);",
+          'l10n.t(label);',
+          "l10n.t({ message: 'No comment' });",
           "other.t('ignored');",
         ].join('\n'),
       },
     ]);
-    expect([...result.messages].sort()).toEqual(['No results', 'Plain template', 'Saved {0}']);
-    expect(result.unextractable).toEqual(['sample.ts:4', 'sample.ts:5']);
+    expect([...result.messages.keys()].sort()).toEqual([
+      'B/Bold letter. One character.',
+      'No results',
+      'Plain template',
+      'Quote/Block quote button',
+      'Saved {0}',
+      '{0} comment',
+      '{0} comments',
+    ]);
+    expect(result.messages.get('Quote/Block quote button')).toEqual({
+      message: 'Quote',
+      comment: ['Block quote button'],
+    });
+    expect(result.unextractable).toEqual([
+      'sample.ts:7',
+      'sample.ts:8',
+      'sample.ts:9',
+      'sample.ts:10',
+    ]);
   });
 
   it('finds no unextractable message in the source tree', () => {
@@ -109,42 +99,70 @@ describe('message extraction', () => {
 });
 
 describe('English bundle', () => {
-  it('lists exactly the messages used in the code', () => {
-    expect(Object.keys(english).sort()).toEqual([...extraction.messages].sort());
-  });
-
-  it('maps every message to itself', () => {
-    for (const [message, value] of Object.entries(english)) expect(value).toBe(message);
+  it('lists exactly the messages used in the code (run `npm run l10n:extract`)', () => {
+    expect(english).toEqual(expectedEnglish);
   });
 });
 
-describe.each(localeFiles)('%s', fileName => {
-  const bundle = readBundle(fileName);
+const locales = [...shipped, ...drafts].map(file => [label(file), file]);
+// Jest rejects an empty table, so the suites exist only while there is a locale to check.
+(locales.length ? describe.each(locales) : describe.skip.each([['no locale', '']]))(
+  '%s',
+  (_name, file) => {
+    const bundle = readJson(file);
 
-  it('has no stale message', () => {
-    expect(Object.keys(bundle).filter(message => !(message in english))).toEqual([]);
+    it('has no stale message', () => {
+      expect(Object.keys(bundle).filter(key => !(key in english))).toEqual([]);
+    });
+
+    it('has only non-empty text', () => {
+      for (const [key, value] of Object.entries(bundle)) {
+        expect({ key, ok: typeof value === 'string' && value.trim() !== '' }).toEqual({
+          key,
+          ok: true,
+        });
+      }
+    });
+
+    it('keeps the placeholders of each English source', () => {
+      for (const [key, value] of Object.entries(bundle)) {
+        if (!(key in english)) continue;
+        expect({ key, placeholders: placeholders(String(value)) }).toEqual({
+          key,
+          placeholders: placeholders(englishText(key)),
+        });
+      }
+    });
+
+    it('adds no markup characters the English source does not have', () => {
+      for (const [key, value] of Object.entries(bundle)) {
+        if (!(key in english)) continue;
+        for (const character of ['<', '>']) {
+          if (englishText(key).includes(character)) continue;
+          expect({ key, character, found: String(value).includes(character) }).toEqual({
+            key,
+            character,
+            found: false,
+          });
+        }
+      }
+    });
+  }
+);
+
+describe('shipped locales', () => {
+  it('translate every message', () => {
+    const incomplete = shipped
+      .map(file => ({
+        locale: label(file),
+        missing: Object.keys(english).filter(key => !(key in readJson(file))),
+      }))
+      .filter(entry => entry.missing.length > 0);
+    expect(incomplete).toEqual([]);
   });
 
-  it('has only non-empty text', () => {
-    for (const value of Object.values(bundle)) {
-      expect(typeof value).toBe('string');
-      expect(value.trim()).not.toBe('');
-    }
-  });
-
-  it('keeps the placeholders of each English source', () => {
-    for (const [message, value] of Object.entries(bundle)) {
-      expect({ message, placeholders: placeholders(value) }).toEqual({
-        message,
-        placeholders: placeholders(message),
-      });
-    }
-  });
-});
-
-describe('Simplified Chinese sample bundle', () => {
-  it('reports the one message it deliberately leaves untranslated', () => {
-    const sample = readBundle('bundle.l10n.zh-cn.json');
-    expect(Object.keys(english).filter(message => !(message in sample))).toEqual(['Close search']);
+  it('keeps a locale in one place only', () => {
+    const names = (files: string[]) => files.map(file => path.basename(file));
+    expect(names(drafts).filter(name => names(shipped).includes(name))).toEqual([]);
   });
 });

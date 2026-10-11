@@ -545,10 +545,19 @@ describe('Search Overlay UI behaviors', () => {
 });
 
 describe('Search Overlay localization', () => {
-  // Sample text only: not reviewed by a native speaker.
-  const sampleBundle = JSON.parse(
-    readFileSync(path.resolve(__dirname, '../../../l10n/bundle.l10n.zh-cn.json'), 'utf8')
-  ) as Record<string, string>;
+  // Leaves out "Close search" on purpose, to exercise the fallback to English.
+  const sampleBundle: Record<string, string> = {
+    'Close (Escape)': '关闭 (Escape)',
+    'Find in document': '在文档中查找',
+    'Find in document...': '在文档中查找...',
+    'Next match': '下一个匹配项',
+    'Next match (Enter)': '下一个匹配项 (Enter)',
+    'No results': '无结果',
+    'Previous match': '上一个匹配项',
+    'Previous match (Shift+Enter)': '上一个匹配项 (Shift+Enter)',
+    'Search query': '搜索内容',
+    '{0} of {1}': '第 {0} 项，共 {1} 项',
+  };
   let editor: MockEditor;
 
   const search = (query: string): string => {

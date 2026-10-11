@@ -18,6 +18,14 @@ export type L10nBundle = Readonly<Record<string, string>>;
 /** A value that can replace a `{n}` placeholder. */
 export type L10nArgument = string | number | boolean;
 
+/** A message that needs a note for translators, same shape as `vscode.l10n.t` options. */
+export interface L10nMessageOptions {
+  message: string;
+  args?: readonly L10nArgument[];
+  /** Context for translators. Also separates identical English words with different meanings. */
+  comment: string | readonly string[];
+}
+
 /** `<body>` attribute carrying the bundle from the extension host to the webview. */
 export const L10N_BUNDLE_ATTRIBUTE = 'data-l10n-bundle';
 
@@ -37,6 +45,33 @@ export function formatL10n(message: string, args: readonly L10nArgument[]): stri
     const value = args[Number(index)];
     return value === undefined ? placeholder : String(value);
   });
+}
+
+/**
+ * Bundle key of a message, matching the key VS Code builds for `vscode.l10n.t`.
+ *
+ * @param message - English source text
+ * @param comment - Translator note; part of the key when present
+ * @returns `message`, or `message/comment` when a comment is given
+ */
+export function l10nKey(message: string, comment?: string | readonly string[]): string {
+  const note = typeof comment === 'string' ? comment : (comment ?? []).join('');
+  return note ? `${message}/${note}` : message;
+}
+
+/**
+ * Escape text for use inside HTML markup or a quoted attribute.
+ *
+ * @param text - Plain text, for example a translated message
+ * @returns Text that an HTML parser reads back as the same characters
+ */
+export function escapeHtmlText(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**
@@ -69,10 +104,5 @@ export function parseL10nBundle(serialized: string | null | undefined): L10nBund
  */
 export function renderL10nBundleAttribute(bundle: L10nBundle | undefined): string {
   if (!bundle || Object.keys(bundle).length === 0) return '';
-  const value = JSON.stringify(bundle)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return ` ${L10N_BUNDLE_ATTRIBUTE}="${value}"`;
+  return ` ${L10N_BUNDLE_ATTRIBUTE}="${escapeHtmlText(JSON.stringify(bundle))}"`;
 }

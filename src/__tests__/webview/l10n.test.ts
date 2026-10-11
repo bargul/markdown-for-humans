@@ -26,6 +26,41 @@ describe('webview l10n', () => {
     });
   });
 
+  describe('translator comments', () => {
+    it('looks a commented message up under message/comment', () => {
+      l10n.configureL10n({ Quote: '报价', 'Quote/Block quote button': '引用' });
+      expect(l10n.t('Quote')).toBe('报价');
+      expect(l10n.t({ message: 'Quote', comment: 'Block quote button' })).toBe('引用');
+    });
+
+    it('substitutes args and falls back to the English message', () => {
+      expect(l10n.t({ message: 'Open {0}', args: ['a.md'], comment: ['Verb'] })).toBe('Open a.md');
+      l10n.configureL10n({ 'Open {0}/Verb': '打开 {0}' });
+      expect(l10n.t({ message: 'Open {0}', args: ['a.md'], comment: ['Verb'] })).toBe('打开 a.md');
+    });
+  });
+
+  describe('html', () => {
+    it('escapes the translation and its arguments', () => {
+      l10n.configureL10n({ 'Rename {0}': '<b>重命名</b> {0}' });
+      expect(l10n.html('Rename {0}', '<img src=x>')).toBe(
+        '&lt;b&gt;重命名&lt;/b&gt; &lt;img src=x&gt;'
+      );
+    });
+
+    it('lets markup wrap a placeholder that was left without an argument', () => {
+      l10n.configureL10n({ 'Add {0} to see the outline': '添加 {0} 以查看大纲' });
+      const markup = l10n
+        .html('Add {0} to see the outline')
+        .replace('{0}', '<code># Heading</code>');
+      expect(markup).toBe('添加 <code># Heading</code> 以查看大纲');
+    });
+
+    it('accepts a commented message', () => {
+      expect(l10n.html({ message: 'Save & close', comment: 'Button' })).toBe('Save &amp; close');
+    });
+  });
+
   describe('fallback to English', () => {
     it('returns the source message when no bundle is configured', () => {
       expect(l10n.t('No results')).toBe('No results');

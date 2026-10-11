@@ -7,7 +7,9 @@
 
 import {
   L10N_BUNDLE_ATTRIBUTE,
+  escapeHtmlText,
   formatL10n,
+  l10nKey,
   parseL10nBundle,
   renderL10nBundleAttribute,
 } from '../../shared/l10n';
@@ -64,6 +66,39 @@ describe('parseL10nBundle', () => {
     const bundle = parseL10nBundle('{"a":"A"}');
     expect(bundle.constructor).toBeUndefined();
     expect(bundle.toString).toBeUndefined();
+  });
+});
+
+describe('l10nKey', () => {
+  it('is the message itself without a comment', () => {
+    expect(l10nKey('Quote')).toBe('Quote');
+    expect(l10nKey('Quote', '')).toBe('Quote');
+    expect(l10nKey('Quote', [])).toBe('Quote');
+  });
+
+  it('appends the comment the way VS Code does', () => {
+    expect(l10nKey('Quote', 'Toolbar button that inserts a block quote')).toBe(
+      'Quote/Toolbar button that inserts a block quote'
+    );
+    expect(l10nKey('B', ['Bold button letter', ' Keep it to one character'])).toBe(
+      'B/Bold button letter Keep it to one character'
+    );
+  });
+});
+
+describe('escapeHtmlText', () => {
+  it('escapes every character that can open markup or close an attribute', () => {
+    expect(escapeHtmlText(`<img src=x onerror="a()"> & 'q'`)).toBe(
+      '&lt;img src=x onerror=&quot;a()&quot;&gt; &amp; &#39;q&#39;'
+    );
+  });
+
+  it('keeps text an entity could be read from as plain text', () => {
+    const host = document.createElement('div');
+    host.innerHTML = `<span title="${escapeHtmlText('Finish &copy "now"')}">${escapeHtmlText('Finish &copy <b>')}</span>`;
+    expect(host.querySelector('span')?.title).toBe('Finish &copy "now"');
+    expect(host.textContent).toBe('Finish &copy <b>');
+    expect(host.querySelectorAll('*')).toHaveLength(1);
   });
 });
 
