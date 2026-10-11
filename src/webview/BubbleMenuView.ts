@@ -756,8 +756,8 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
     },
     {
       type: 'button',
-      label: 'Export settings',
-      title: 'Export settings',
+      label: 'Extension settings',
+      title: 'Extension settings',
       icon: { name: 'gear', fallback: '⚙' },
       action: () => {
         window.dispatchEvent(new CustomEvent('openExtensionSettings'));

@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - A link to another Markdown file opens in this editor. It opened in VS Code's text editor, even when this editor was your default for Markdown.
 - Links that carry a section (`guide.md#install`) or encoded characters (`my%20notes.md`) open the file. They reported "File not found".
 - C# is in the code block language menu. C# code was already highlighted, but the menu did not offer it.
+- Word export keeps code blocks (one monospace line each) and block math (as its LaTeX source). Both were dropped from the document.
+- Word export shows checklist items as ☐ and ☑ instead of the hidden "Task item checkbox for ..." text.
+- The toolbar gear is labeled "Extension settings"; it was labeled "Export settings" but opens the extension's settings.
 
 ---
 

@@ -1792,8 +1792,9 @@ function getExportStyles(theme: string): string {
 /**
  * Convert HTML to docx elements using Cheerio for reliable parsing
  * Handles headings, paragraphs, lists, tables, and images with nested tags
+ * Exported for tests; production callers go through exportDocument.
  */
-async function htmlToDocx(
+export async function htmlToDocx(
   html: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   docx: any,
@@ -1811,11 +1812,23 @@ async function htmlToDocx(
   const cheerio = (cheerioModule as any).default ?? cheerioModule;
   const $ = cheerio.load(html);
 
+  // TipTap task items hold a visually hidden label ("Task item checkbox for ...") that only
+  // CSS hides; without CSS it would export as text. Replace the label with the checked state.
+  // The editor's node view sets only data-checked on the li; data-type is static renderHTML only.
+  $('li[data-checked]').each((_index: number, item: unknown) => {
+    const checked = $(item).attr('data-checked') === 'true';
+    $(item)
+      .children('label')
+      .replaceWith(checked ? '☑ ' : '☐ ');
+  });
+
   // Select all block-level elements we care about, maintaining document order
   // Cheerio traverses in document order automatically
   // Select all block-level elements we care about
   // We need to use a loop that supports await
-  const elements = $('h1, h2, h3, h4, h5, h6, p, li, blockquote, table').toArray();
+  const elements = $(
+    'h1, h2, h3, h4, h5, h6, p, li, blockquote, table, pre, div[data-math-block]'
+  ).toArray();
 
   for (const element of elements) {
     const $el = $(element);
@@ -1858,6 +1871,28 @@ async function htmlToDocx(
             children: paragraphChildren,
             bullet: { level: 0 },
             spacing: { after: 100 },
+          })
+        );
+      }
+    } else if (tagName === 'pre') {
+      // Code block: one monospace paragraph per source line keeps indentation and blank lines
+      const lines: string[] = String($el.text()).replace(/\n$/, '').split('\n');
+      lines.forEach((line, index) => {
+        children.push(
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: line, font: 'Courier New' })],
+            spacing: { after: index === lines.length - 1 ? 200 : 0 },
+          })
+        );
+      });
+    } else if (tagName === 'div') {
+      // Block math: Word has no KaTeX, so export the LaTeX source instead of dropping the block
+      const latex = ($el.attr('data-latex') ?? '').trim();
+      if (latex) {
+        children.push(
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: latex, font: 'Courier New' })],
+            spacing: { before: 200, after: 200 },
           })
         );
       }
