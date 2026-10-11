@@ -251,7 +251,7 @@ export async function showImageInsertDialog(editor: Editor, vscodeApi: VsCodeApi
               '{0}. {1} ({2} KB)',
               index + 1,
               file.name,
-              (file.size / 1024).toFixed(1)
+              l10n.formatNumber(file.size / 1024, 1)
             );
             return row;
           })

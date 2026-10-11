@@ -127,9 +127,9 @@ export function formatFileSize(bytes: number): string {
     return l10n.t('{0} B', bytes);
   }
   if (bytes < 1024 * 1024) {
-    return l10n.t('{0} KB', (bytes / 1024).toFixed(1));
+    return l10n.t('{0} KB', l10n.formatNumber(bytes / 1024, 1));
   }
-  return l10n.t('{0} MB', (bytes / (1024 * 1024)).toFixed(1));
+  return l10n.t('{0} MB', l10n.formatNumber(bytes / (1024 * 1024), 1));
 }
 
 /**

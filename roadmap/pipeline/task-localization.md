@@ -532,3 +532,85 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
 - Plural forms beyond two, if a Slavic language is contributed.
 - Right-to-left layout, if VS Code gains such a display language.
 - Translated README section or Marketplace gallery text, if the Marketplace starts honoring locale files [S11].
+
+---
+
+## 10. Best-practice audit (2026-10-11)
+
+Every part of the extension checked against published localization practice. Method: a second full string census of `src/` after conversion (it also looks at text that reaches the UI through variables, which the CI ratchet cannot see), targeted searches for formatting, joining and sorting, the packaging file list, and the real-host runs in section 7.
+
+**Sources**
+
+- [B1] Microsoft Learn, Software internationalization: https://learn.microsoft.com/en-us/globalization/methodology/software-internationalization
+- [B2] Microsoft Learn, Concatenation: https://learn.microsoft.com/en-us/globalization/internationalization/concatenation
+- [B3] Microsoft Learn, Message formatting: https://learn.microsoft.com/en-us/globalization/internationalization/message-formatting
+- [B4] Microsoft Learn, Pluralization: https://learn.microsoft.com/en-us/globalization/internationalization/pluralization
+- [B5] Microsoft Learn, Externalize resources: https://learn.microsoft.com/en-us/globalization/internationalization/externalize-resources
+- [B6] Microsoft Learn, Best practices for world-ready apps: https://learn.microsoft.com/en-us/dotnet/core/extensions/best-practices-for-developing-world-ready-apps
+- VS Code: [S1] vscode-l10n README, [S3] l10n-dev README, [S4] API reference, [S6] l10n sample, [S8] "Localization as part of the API", [S9] `extHostLocalizationService.ts`, plus:
+- [B7] VS Code source, `remoteExtensionsScanner.ts` (language passed to remote scans, language pack installed on the remote): https://github.com/microsoft/vscode/blob/main/src/vs/server/node/remoteExtensionsScanner.ts
+- [B8] VS Code PR 331626, command titles lose localization after an install or update until restart: https://github.com/microsoft/vscode/pull/331626
+
+**Status key:** Met, Partial (works, with a stated limit), Gap (not done), n/a.
+
+### A. VS Code platform practices
+
+| # | Practice | Source | Status | Evidence and limits |
+| - | -------- | ------ | ------ | ------------------- |
+| A1 | Manifest text uses `%key%` with English in `package.nls.json` | S1, S6 | Met | 39 entries; `manifest.test.ts` fails on any literal under `contributes`. Settings added on `main` after this branch was cut are not in yet |
+| A2 | Per-language manifest files `package.nls.<locale>.json` | S1 | Met | Drafts for 5 languages; checked for kept links, code spans and `{{placeholders}}` |
+| A3 | Code text uses `vscode.l10n.t` | S1, S4 | Met | Host files use it directly |
+| A4 | `"l10n"` field points at the bundle folder | S6 | Met | `"l10n": "./l10n"` |
+| A5 | Bundles named `bundle.l10n.<locale>.json` with VS Code locale ids | S1, S9 | Met | `zh-cn`, `ja`, `es`, `pt-br`, `ru`; loaded by exact id in real hosts |
+| A6 | Subprocess or webview receives `l10n.bundle` or `l10n.uri` from the host | S1, S8 | Met | Bundle rendered on `<body>`; read back in VS Code 1.98.0, 1.141.0 and Cursor |
+| A7 | Do not use `@vscode/l10n` in the main process; `vscode-nls` is superseded | S1, S8 | Met | Neither is a dependency |
+| A8 | Translator comments disambiguate identical English text | S8 | Partial | 21 of 872 messages carry a comment. 56 messages are used in more than one file; the most reused are true synonyms ("Cancel", "Retry", "Close") |
+| A9 | Extract strings with tooling, do not hand-maintain the bundle | S3 | Met | `npm run l10n:extract`; CI fails when the bundle and the code differ. Own extractor, because the official one cannot see the webview helper (section 5.3) |
+| A10 | Missing translation falls back to English per key | S1, S9 | Met | Unit tests and real-host run ("Close search" left out on purpose in the first run) |
+| A11 | Test with pseudo-localization | S3, S6, B2 | Partial | One real-editor test pseudo-translates every message. No `qps-ploc` pass over the whole UI in a real host |
+| A12 | Keep Marketplace listing fields plain | S16 | Met | `displayName`, `description` literal; English manifest values are plain strings, not the comment form |
+| A13 | Works in remote hosts (SSH, WSL, containers) | B7 | Partial | VS Code's source passes the display language to remote scans and installs the language pack there. Not run by us |
+| A14 | Works in forks | S19 | Partial | Cursor verified for `zh-cn` and `ja`. VSCodium and Windsurf not run |
+| A15 | Package the translation files | vsce | Met | `vsce ls` lists `package.nls.*.json` and `l10n/bundle.l10n.*.json`; `l10n/drafts/` and `l10n/README.md` are excluded |
+| A16 | Language change needs no code in the extension | S10 | Met | VS Code restarts on a display language change; no setting of our own |
+
+### B. General localization practices
+
+| # | Practice | Source | Status | Evidence and limits |
+| - | -------- | ------ | ------ | ------------------- |
+| B1 | Externalize every user-facing string | B1, B5 | Met | Census: of 656 UI strings found, 627 go through translation; the rest are language names, icon fallbacks and 2 lines waiting on `main`. Ratchet in CI holds it |
+| B2 | Keep non-user text (logs, debug) out of translation | B1, B5 | Met | `[MD4H]` logs untouched; internal errors stay English by rule |
+| B3 | Errors a user can act on are translated | B1 | Met | 98 thrown errors sorted and converted in two passes; 69 internal ones in the provider left English on purpose |
+| B4 | No concatenation; whole sentences | B2, B3, B6 | Met | Extractor rejects non-literal messages; plural suffixes and "is/are" fragments rewritten as whole sentences |
+| B5 | Do not join sentences or list items in code | B2 | Partial | The one sentence join now goes through a message, so a language can drop the space. Lists of item ids (F1, F2) are still joined with `', '` in 4 places |
+| B6 | Placeholders can be reordered | B2, B3 | Met | Indexed `{0}`; tested with reordered and repeated placeholders |
+| B7 | Prefer named placeholders, document what each stands for | B3, B5 | Gap | 200 messages use numbered placeholders and none documents them. VS Code supports named ones; converting would change every key |
+| B8 | Plurals follow each language's rules | B4 | Partial | Two forms (one, other) chosen in code. Enough for the five languages only because Russian uses a "label: number" shape; no ICU plural categories |
+| B9 | Inserted words must not break grammar | B2, B3 | Partial | Block kinds and counted phrases are inserted into other sentences in about 10 messages. Reviewers reshaped those sentences per language; a few read as labels |
+| B10 | Do not reuse one string for different meanings | B3, B5 | Partial | Verb or noun cases carry comments. Not audited message by message beyond the reviewers' pass |
+| B11 | Never use display text as an identifier | B5 | Met | 15 "compare with the button label" sites and one "match the label with a regex" site fixed; nothing translated is stored or sent to the host (pseudo-translation test) |
+| B12 | Dates, numbers and units follow the locale | B1, B3, B6 | Met | Host counts use `vscode.env.language`; webview sizes use `l10n.formatNumber`; dates use `Intl` with the document language. Units (KB, MB, px) are inside the message |
+| B13 | No hardcoded locale | B6 | Met | The only `'en-US'` left in UI code is the fallback when no language is set. The Feedback report keeps `'en-US'` on purpose |
+| B14 | Markup stays out of translatable text | B3 | Met | `l10n.html` escapes; CI rejects `<` and `>` in translations; markup is inserted around a placeholder in code |
+| B15 | No text inside images | B1 | Met | Icons are font glyphs or SVG shapes without words. Letter glyphs (B, I, S) can be replaced per language |
+| B16 | Layout survives longer text | B1, B6 | Partial | Main toolbar measured identical in 5 languages. The Feedback toolbar (text buttons), dialogs and menus were not measured or looked at |
+| B17 | Right-to-left layout | B1 | n/a | None of VS Code's display languages is right to left; 130 physical left or right rules in CSS would need work |
+| B18 | Declare the content language | W3C | Met | `<html lang>` follows the display language once its bundle is loaded |
+| B19 | Accessibility text is translated | B1 | Met | `aria-label`, `title`, `alt`, placeholders and live-region announcements are converted |
+| B20 | Keyboard shortcuts are not assumed | B1 | Met | Key names are arguments or left as printed; no shortcut is changed by language |
+| B21 | User content in any script works | B1 | Gap | The word counter splits on spaces, so Chinese and Japanese text shows a near-zero count and reading time. Existing behaviour |
+| B22 | Sorting and case follow the locale | B1 | n/a | No user-visible list is sorted alphabetically |
+| B23 | Encoding | B1 | Met | UTF-8 JSON throughout |
+| B24 | Tests do not depend on the machine's locale | B6 | Met | Tests run in English with a fixed fallback; translated runs set the bundle explicitly |
+| B25 | Translation process: review, staleness, ownership | B5 | Partial | Drafts versus shipped folders, CI checks, translator guide. No native human has reviewed any language yet |
+
+### What remains, in order of user impact
+
+1. **Native review of the five languages** (B25). Both passes were AI. Chinese has a volunteer; the others have none.
+2. **Sync with `main`** (A1): two messages and the newer settings.
+3. **Screen check of the Feedback toolbar, dialogs and menus** in each language (B16).
+4. **Word count for Chinese and Japanese** (B21): needs `Intl.Segmenter`, which also shifts English counts slightly, so it is a product decision.
+5. **Placeholder documentation or named placeholders** (B7) and more translator comments (A8).
+6. **A full pseudo-language pass in a real host** (A11).
+7. **Remote and other forks** (A13, A14): one manual run each.
+

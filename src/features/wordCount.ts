@@ -66,22 +66,36 @@ export function calculateStats(text: string): DocumentStats {
 }
 
 /**
+ * Format a count with the digit grouping of VS Code's display language.
+ *
+ * Node formats with the operating system's locale by default, which can differ
+ * from the language the rest of the UI is shown in.
+ */
+function formatCount(value: number): string {
+  try {
+    return value.toLocaleString(vscode.env.language || undefined);
+  } catch {
+    return value.toLocaleString();
+  }
+}
+
+/**
  * Format stats into a tooltip string
  */
 export function formatStatsTooltip(stats: DocumentStats): string {
   return [
     vscode.l10n.t(
       stats.characters === 1 ? '{0} character' : '{0} characters',
-      stats.characters.toLocaleString()
+      formatCount(stats.characters)
     ),
     vscode.l10n.t(
       stats.charactersNoSpaces === 1 ? '{0} character (no spaces)' : '{0} characters (no spaces)',
-      stats.charactersNoSpaces.toLocaleString()
+      formatCount(stats.charactersNoSpaces)
     ),
-    vscode.l10n.t(stats.lines === 1 ? '{0} line' : '{0} lines', stats.lines.toLocaleString()),
+    vscode.l10n.t(stats.lines === 1 ? '{0} line' : '{0} lines', formatCount(stats.lines)),
     vscode.l10n.t(
       stats.paragraphs === 1 ? '{0} paragraph' : '{0} paragraphs',
-      stats.paragraphs.toLocaleString()
+      formatCount(stats.paragraphs)
     ),
     vscode.l10n.t('~{0} min read', stats.readingTime),
   ].join('\n');
@@ -162,7 +176,7 @@ export class WordCountFeature {
 
     const stats = calculateStats(document.getText());
 
-    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t(stats.words === 1 ? '{0} word' : '{0} words', stats.words.toLocaleString())}`;
+    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t(stats.words === 1 ? '{0} word' : '{0} words', formatCount(stats.words))}`;
     this.statusBarItem.tooltip = formatStatsTooltip(stats);
     this.statusBarItem.show();
   }
@@ -187,7 +201,7 @@ export class WordCountFeature {
     const selectedText = editor.document.getText(editor.selection);
     const stats = calculateStats(selectedText);
 
-    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t(stats.words === 1 ? '{0} word selected' : '{0} words selected', stats.words.toLocaleString())}`;
+    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t(stats.words === 1 ? '{0} word selected' : '{0} words selected', formatCount(stats.words))}`;
     this.statusBarItem.tooltip = vscode.l10n.t('Selected:\n{0}', formatStatsTooltip(stats));
   }
 
@@ -205,10 +219,10 @@ export class WordCountFeature {
 
     const message = [
       vscode.l10n.t('📊 Document Statistics'),
-      vscode.l10n.t('Words: {0}', stats.words.toLocaleString()),
-      vscode.l10n.t('Characters: {0}', stats.characters.toLocaleString()),
-      vscode.l10n.t('Lines: {0}', stats.lines.toLocaleString()),
-      vscode.l10n.t('Paragraphs: {0}', stats.paragraphs.toLocaleString()),
+      vscode.l10n.t('Words: {0}', formatCount(stats.words)),
+      vscode.l10n.t('Characters: {0}', formatCount(stats.characters)),
+      vscode.l10n.t('Lines: {0}', formatCount(stats.lines)),
+      vscode.l10n.t('Paragraphs: {0}', formatCount(stats.paragraphs)),
       vscode.l10n.t('Reading time: ~{0} min', stats.readingTime),
     ].join(' | ');
 

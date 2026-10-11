@@ -241,6 +241,25 @@ describe('formatStatsTooltip', () => {
     expect(tooltip).toContain('~6 min read');
   });
 
+  it('groups digits the way the display language does', () => {
+    const env = vscode.env as unknown as { language?: string };
+    const original = env.language;
+    env.language = 'de';
+    try {
+      const tooltip = formatStatsTooltip({
+        words: 1234,
+        characters: 5678,
+        charactersNoSpaces: 4444,
+        lines: 100,
+        paragraphs: 25,
+        readingTime: 6,
+      });
+      expect(tooltip).toContain('5.678 characters');
+    } finally {
+      env.language = original;
+    }
+  });
+
   it('uses the singular for a count of exactly one', () => {
     const tooltip = formatStatsTooltip({
       words: 1,

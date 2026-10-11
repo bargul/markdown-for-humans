@@ -1445,7 +1445,7 @@ async function exportToPDF(
   try {
     await fs.promises.writeFile(tempHtmlPath, htmlWithBase, 'utf8');
   } catch (error) {
-    throw new Error(`Failed to write temporary HTML for export: ${error}`);
+    throw new Error(vscode.l10n.t('Failed to write temporary HTML for export: {0}', String(error)));
   }
 
   try {
@@ -1486,7 +1486,9 @@ async function exportToPDF(
   } catch (error) {
     // Surface a user-friendly error
     const errMessage =
-      error instanceof Error ? error.message : 'Unknown error while exporting to PDF';
+      error instanceof Error
+        ? error.message
+        : vscode.l10n.t('Unknown error while exporting to PDF');
     throw new Error(errMessage);
   } finally {
     // Clean up temp files
@@ -1521,7 +1523,12 @@ async function runChrome(executablePath: string, args: string[]): Promise<void> 
 
     chromeProcess.once('error', error => {
       reject(
-        new Error(`Failed to launch Chrome: ${error instanceof Error ? error.message : error}`)
+        new Error(
+          vscode.l10n.t(
+            'Failed to launch Chrome: {0}',
+            error instanceof Error ? error.message : String(error)
+          )
+        )
       );
     });
 
@@ -1531,7 +1538,11 @@ async function runChrome(executablePath: string, args: string[]): Promise<void> 
       } else {
         reject(
           new Error(
-            `Chrome exited with code ${code}. Install or point to a working Chrome/Chromium via "markdownForHumans.chromePath".`
+            vscode.l10n.t(
+              'Chrome exited with code {0}. Install or point to a working Chrome/Chromium via "{1}".',
+              String(code),
+              'markdownForHumans.chromePath'
+            )
           )
         );
       }

@@ -742,7 +742,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       type: 'button',
       label: l10n.t('Copy MD'),
       title: l10n.t('Copy selection as Markdown'),
-      icon: { name: 'copy', fallback: 'Copy' },
+      icon: { name: 'copy', fallback: l10n.t('Copy') },
       action: () => {
         window.dispatchEvent(new CustomEvent('copyAsMarkdown'));
       },
@@ -753,7 +753,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       type: 'dropdown',
       label: l10n.t('Export'),
       title: l10n.t('Export document'),
-      icon: { name: 'export', fallback: 'Export' },
+      icon: { name: 'export', fallback: l10n.t('Export') },
       items: [
         {
           label: l10n.t('Export as PDF'),

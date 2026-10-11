@@ -61,6 +61,28 @@ describe('webview l10n', () => {
     });
   });
 
+  describe('formatNumber', () => {
+    afterEach(() => document.documentElement.removeAttribute('lang'));
+
+    it('formats like English when no display language is set', () => {
+      expect(l10n.formatNumber(1.5, 1)).toBe('1.5');
+      expect(l10n.formatNumber(1023.94, 1)).toBe('1023.9');
+      expect(l10n.formatNumber(42)).toBe('42');
+    });
+
+    it('uses the decimal mark of the display language', () => {
+      document.documentElement.lang = 'de';
+      expect(l10n.formatNumber(1.5, 1)).toBe('1,5');
+      document.documentElement.lang = 'pt-br';
+      expect(l10n.formatNumber(2.25, 1)).toMatch(/^2,[23]$/);
+    });
+
+    it('falls back to plain digits for a language tag the runtime rejects', () => {
+      document.documentElement.lang = 'not a language';
+      expect(l10n.formatNumber(1.5, 1)).toBe('1.5');
+    });
+  });
+
   describe('fallback to English', () => {
     it('returns the source message when no bundle is configured', () => {
       expect(l10n.t('No results')).toBe('No results');

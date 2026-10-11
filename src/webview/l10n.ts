@@ -77,3 +77,24 @@ export function html(options: L10nMessageOptions): string;
 export function html(message: string | L10nMessageOptions, ...args: L10nArgument[]): string {
   return escapeHtmlText(typeof message === 'string' ? t(message, ...args) : t(message));
 }
+
+/**
+ * Format a number for display in the display language.
+ *
+ * @param value - The number to show
+ * @param fractionDigits - Digits after the decimal mark
+ * @returns The number with that language's decimal mark and no digit grouping
+ */
+export function formatNumber(value: number, fractionDigits = 0): string {
+  const language = (typeof document !== 'undefined' && document.documentElement.lang) || 'en-US';
+  try {
+    return value.toLocaleString(language, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+      useGrouping: false,
+    });
+  } catch {
+    // The host passes VS Code's language id through; an id the runtime rejects must not break the UI.
+    return value.toFixed(fractionDigits);
+  }
+}

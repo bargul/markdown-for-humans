@@ -3337,7 +3337,15 @@ export function createFeedbackReviewController(options: {
       );
     }
     parts.push(l10n.t('No approximate positions were used.'));
-    status.textContent = parts.join(' ');
+    // The space between sentences belongs to the translation: not every language uses one.
+    status.textContent = parts.reduce((text, sentence) =>
+      l10n.t({
+        message: '{0} {1}',
+        args: [text, sentence],
+        comment:
+          'Two sentences shown one after the other. Remove the space if your language does not put one between sentences.',
+      })
+    );
 
     const actions = createElement('div', 'feedback-draft-actions');
     for (const [id, state] of orderedIssues) {

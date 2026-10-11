@@ -32,6 +32,17 @@ type Internals = {
     document: vscode.TextDocument
   ) => Promise<void>;
   showDocumentSyncConflict: (replacedContent: string) => Promise<void>;
+  handleFeedbackWebviewMessage: (
+    message: Record<string, unknown>,
+    document: vscode.TextDocument,
+    webview: vscode.Webview
+  ) => Promise<void>;
+  handleResizeImage: (
+    message: Record<string, unknown>,
+    document: vscode.TextDocument,
+    webview: vscode.Webview
+  ) => Promise<void>;
+  feedbackSessions: Map<string, unknown>;
 };
 
 const DOC_PATH = '/tmp/mdws/docs/guide.md';
@@ -43,6 +54,11 @@ const GERMAN: Record<string, string> = {
   'Open Replaced Version': 'Ersetzte Version öffnen',
   'Markdown Editor for Humans: formatting shortcuts disabled':
     'Markdown Editor for Humans: Formatierungskürzel deaktiviert',
+  'This feedback session is no longer active.': 'Diese Feedback-Sitzung ist nicht mehr aktiv.',
+  'This feedback session is already finishing. Wait for that operation to finish.':
+    'Diese Feedback-Sitzung wird gerade abgeschlossen. Warten Sie, bis der Vorgang beendet ist.',
+  'Failed to resize image: {0}': 'Bildgröße konnte nicht geändert werden: {0}',
+  'Image not found: {0}': 'Bild nicht gefunden: {0}',
 };
 
 function createProvider(): Internals {
@@ -168,5 +184,74 @@ describe('extension host localization', () => {
       'Markdown Editor for Humans: Formatierungskürzel deaktiviert',
       3000
     );
+  });
+
+  describe('thrown errors a user reads', () => {
+    function createWebview(): vscode.Webview & { postMessage: jest.Mock } {
+      return { postMessage: jest.fn(async () => true) } as unknown as vscode.Webview & {
+        postMessage: jest.Mock;
+      };
+    }
+
+    it('translates a Feedback error in the notification and in the webview message', async () => {
+      const webview = createWebview();
+
+      await createProvider().handleFeedbackWebviewMessage(
+        { type: 'feedback.item.delete', requestId: 'request-1', sessionId: 'session-1', id: 'F1' },
+        createDocument(),
+        webview
+      );
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'Diese Feedback-Sitzung ist nicht mehr aktiv.'
+      );
+      expect(webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'feedback.error',
+          requestId: 'request-1',
+          message: 'Diese Feedback-Sitzung ist nicht mehr aktiv.',
+        })
+      );
+    });
+
+    it('translates the busy session error as one sentence per state', async () => {
+      const provider = createProvider();
+      const document = createDocument();
+      const webview = createWebview();
+      provider.feedbackSessions.set(document.uri.toString(), {
+        ownerWebview: webview,
+        sessionId: 'session-1',
+        phase: 'finishing',
+      });
+
+      await provider.handleFeedbackWebviewMessage(
+        { type: 'feedback.item.delete', requestId: 'request-1', sessionId: 'session-1', id: 'F1' },
+        document,
+        webview
+      );
+
+      expect(webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'feedback.error',
+          sessionId: 'session-1',
+          message:
+            'Diese Feedback-Sitzung wird gerade abgeschlossen. Warten Sie, bis der Vorgang beendet ist.',
+        })
+      );
+    });
+
+    it('translates the reason inside an image error and fills its placeholder', async () => {
+      const webview = createWebview();
+
+      await createProvider().handleResizeImage(
+        { type: 'resizeImage', imagePath: 'missing.png', newWidth: 10, newHeight: 10 },
+        createDocument(),
+        webview
+      );
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'Bildgröße konnte nicht geändert werden: Bild nicht gefunden: missing.png'
+      );
+    });
   });
 });
