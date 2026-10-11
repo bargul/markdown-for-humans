@@ -6,10 +6,13 @@
 
 import CodeBlock, { type CodeBlockOptions } from '@tiptap/extension-code-block';
 import { mergeAttributes } from '@tiptap/core';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { parsePreservedCodeBlock, renderPreservedCodeBlock } from './preservedCodeBlock';
 import { createCodeBlockCopyNodeView } from './codeBlockCopyNodeView';
 import { createCodeHighlightingPlugin } from '../highlighting/plugin';
 import { createHighlightService } from '../highlighting/client';
+import { getSingleLineEditorCopy } from '../utils/pasteHandler';
+import { insertPlainText } from '../utils/plainTextPaste';
 
 interface HighlightedCodeBlockOptions extends CodeBlockOptions {
   workerUri: string;
@@ -26,6 +29,20 @@ export const CodeBlockWithCopy = CodeBlock.extend<HighlightedCodeBlockOptions>({
 
   addProseMirrorPlugins() {
     return [
+      // TipTap's own paste plugin (inherited just below) wraps anything copied
+      // from a VS Code editor in a code block. For a single line, such as a
+      // class name pasted into a sentence, that splits the paragraph (issue
+      // 11), so it goes in as inline text. Several lines still become a block.
+      new Plugin({
+        key: new PluginKey('singleLineEditorPaste'),
+        props: {
+          handlePaste: (_view, event) => {
+            if (this.editor.isActive(this.type.name)) return false;
+            const line = getSingleLineEditorCopy(event.clipboardData);
+            return line !== null && insertPlainText(this.editor, line);
+          },
+        },
+      }),
       ...(this.parent?.() ?? []),
       createCodeHighlightingPlugin(() => createHighlightService(this.options.workerUri)),
     ];
