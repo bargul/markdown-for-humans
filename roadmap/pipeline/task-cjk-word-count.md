@@ -4,7 +4,7 @@
 
 - **Task name:** Count words correctly in Chinese and Japanese
 - **Slug:** cjk-word-count
-- **Status:** in-progress (code and tests done on branch `claude/l10n-scoping-d621b8`; real VS Code check pending)
+- **Status:** merged in PR 155 (2026-10-11); not released yet
 - **Created:** 2026-10-11
 - **Last updated:** 2026-10-11
 - **Shipped:** _(pending)_

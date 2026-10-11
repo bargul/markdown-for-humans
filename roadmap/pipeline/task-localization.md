@@ -4,7 +4,7 @@
 
 - **Task name:** Localization (translation) support
 - **Slug:** localization
-- **Status:** in-progress (branch `claude/l10n-scoping-d621b8`; five languages shipped in the branch, pull request pending)
+- **Status:** merged in PR 155 (2026-10-11); release and issue replies open, see section 9
 - **Created:** 2026-10-11
 - **Last updated:** 2026-10-11
 - **Shipped:** _(pending)_
@@ -535,8 +535,25 @@ Each further language: 0.5 to 1 day of maintainer time for review and a layout p
 
 ## 9. Follow-up & Future Work
 
-- Reply on #55 and #77 with the plan once the owner decides. Drafts only; nothing was posted.
-- Ask the #55 author whether the offer to review Chinese still stands before Phase 4.
+### TODO before this task is closed (merged in PR 155 on 2026-10-11, not released yet)
+
+Do these from `main`, in this order.
+
+- [ ] **Release.** Bump the version (owner picks 0.4.5 or 0.5.0; 0.5.0 suggested, since five languages plus the font settings of PR 154 is a feature release), turn `## [Unreleased]` in `CHANGELOG.md` into the version heading, tag, publish to the VS Code Marketplace and to Open VSX. Follow `docs/RELEASE_CHECKLIST.md`. The owner wants it live on 2026-10-11; issues 86 and 15 were promised the font settings the same day.
+- [ ] **Confirm both stores** show the new version and the README's Languages section.
+- [ ] **Reply on #55 and #77, then close them.** Only after the stores are live, so the reply can name the version. The owner asked for the wording "live today, check on 12 October"; adjust the date if the release slips. The approved texts are in the session hand-over note, not in this repository. Nothing has been posted.
+- [ ] **Marketplace short description and keywords.** Unchanged in PR 155. Owner's choice between leaving them (suggested while the rename rank sampling runs through 2026-10-15) and appending "In 6 languages." to the description.
+- [ ] **Close the plans.** After the release, `git mv` this file and `task-cjk-word-count.md` to `roadmap/shipped/` and update `roadmap/pipeline/README.md`.
+
+### Known gaps carried forward
+
+- No native speaker has reviewed any of the five languages. #55's author offered to review Chinese.
+- In icon mode the Feedback toolbar shows the comment count only in the tooltip. Russian needs about 900 px of editor width to show labels.
+- Not tested on VSCodium, Devin Desktop or remote hosts.
+- `scripts/svg-image-fixture/pdf-export.mjs` has its own hand-written `vscode` module. A new `vscode` API used by `documentExport.ts` must be added there too; CI runs it as `npm run test:svg-browser`.
+
+### Later
+
 - A count ratchet: fail CI when the number of unconverted UI strings in a converted area rises.
 - Plural forms beyond two, if a Slavic language is contributed.
 - Right-to-left layout, if VS Code gains such a display language.
