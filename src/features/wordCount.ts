@@ -70,10 +70,19 @@ export function calculateStats(text: string): DocumentStats {
  */
 export function formatStatsTooltip(stats: DocumentStats): string {
   return [
-    vscode.l10n.t('{0} characters', stats.characters.toLocaleString()),
-    vscode.l10n.t('{0} characters (no spaces)', stats.charactersNoSpaces.toLocaleString()),
-    vscode.l10n.t('{0} lines', stats.lines.toLocaleString()),
-    vscode.l10n.t('{0} paragraphs', stats.paragraphs.toLocaleString()),
+    vscode.l10n.t(
+      stats.characters === 1 ? '{0} character' : '{0} characters',
+      stats.characters.toLocaleString()
+    ),
+    vscode.l10n.t(
+      stats.charactersNoSpaces === 1 ? '{0} character (no spaces)' : '{0} characters (no spaces)',
+      stats.charactersNoSpaces.toLocaleString()
+    ),
+    vscode.l10n.t(stats.lines === 1 ? '{0} line' : '{0} lines', stats.lines.toLocaleString()),
+    vscode.l10n.t(
+      stats.paragraphs === 1 ? '{0} paragraph' : '{0} paragraphs',
+      stats.paragraphs.toLocaleString()
+    ),
     vscode.l10n.t('~{0} min read', stats.readingTime),
   ].join('\n');
 }
@@ -153,7 +162,7 @@ export class WordCountFeature {
 
     const stats = calculateStats(document.getText());
 
-    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t('{0} words', stats.words.toLocaleString())}`;
+    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t(stats.words === 1 ? '{0} word' : '{0} words', stats.words.toLocaleString())}`;
     this.statusBarItem.tooltip = formatStatsTooltip(stats);
     this.statusBarItem.show();
   }
@@ -178,7 +187,7 @@ export class WordCountFeature {
     const selectedText = editor.document.getText(editor.selection);
     const stats = calculateStats(selectedText);
 
-    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t('{0} words selected', stats.words.toLocaleString())}`;
+    this.statusBarItem.text = `$(pencil) ${vscode.l10n.t(stats.words === 1 ? '{0} word selected' : '{0} words selected', stats.words.toLocaleString())}`;
     this.statusBarItem.tooltip = vscode.l10n.t('Selected:\n{0}', formatStatsTooltip(stats));
   }
 

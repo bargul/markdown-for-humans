@@ -241,6 +241,25 @@ describe('formatStatsTooltip', () => {
     expect(tooltip).toContain('~6 min read');
   });
 
+  it('uses the singular for a count of exactly one', () => {
+    const tooltip = formatStatsTooltip({
+      words: 1,
+      characters: 1,
+      charactersNoSpaces: 1,
+      lines: 1,
+      paragraphs: 1,
+      readingTime: 1,
+    });
+
+    expect(tooltip.split('\n')).toEqual([
+      '1 character',
+      '1 character (no spaces)',
+      '1 line',
+      '1 paragraph',
+      '~1 min read',
+    ]);
+  });
+
   it('should handle zero values', () => {
     const stats: DocumentStats = {
       words: 0,
