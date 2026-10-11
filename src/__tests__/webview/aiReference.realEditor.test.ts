@@ -442,3 +442,89 @@ describe("Copy Reference for AI on this repository's documents", () => {
     120_000
   );
 });
+
+describe('Copy Reference for AI on a complex self-numbering document', () => {
+  afterEach(() => document.body.replaceChildren());
+
+  // Every text line of the fixture carries its own source line as "(L<n>)" at
+  // both ends, so the expected line of any caret is read from the rendered
+  // text itself. Nested lists three deep, loose lists, code and quotes inside
+  // list items, alerts, tables with formatting, fences of every kind, breaks,
+  // blank-line runs and link definitions are all in it.
+  const source = readFileSync(resolve(__dirname, '../fixtures/aiReferenceComplex.md'), 'utf8');
+
+  it('keeps the fixture honest: each (L<n>) token sits on line n', () => {
+    source.split('\n').forEach((line, index) => {
+      for (const token of line.matchAll(/\(L(\d+)\)/g)) expect(Number(token[1])).toBe(index + 1);
+    });
+  });
+
+  /** The line the rendered text at a position says it is on, or null when it does not say. */
+  function statedLine(editor: Editor, position: number): number | null {
+    const $position = editor.state.doc.resolve(position);
+    const parent = $position.parent;
+    if (!parent.isTextblock) return null;
+
+    let text = '';
+    for (let depth = $position.depth; depth > 0; depth -= 1) {
+      if ($position.node(depth).type.name === 'tableRow') text = $position.node(depth).textContent;
+    }
+    if (text === '') {
+      // The rendered line around the caret: text between hard breaks or newlines.
+      const lines = [''];
+      let caretLine = 0;
+      parent.forEach((child, offset) => {
+        const pieces = child.type.name === 'hardBreak' ? ['', ''] : (child.text ?? '').split('\n');
+        let at = offset;
+        pieces.forEach((piece, index) => {
+          if (index > 0) {
+            lines.push('');
+            at += 1;
+          }
+          lines[lines.length - 1] += piece;
+          if (at <= $position.parentOffset) caretLine = lines.length - 1;
+          at += piece.length;
+        });
+      });
+      text = lines[caretLine];
+    }
+
+    const stated = new Set([...text.matchAll(/\(L(\d+)\)/g)].map(match => Number(match[1])));
+    return stated.size === 1 ? [...stated][0] : null;
+  }
+
+  it('names the stated line at every caret position, or a range that contains it', () => {
+    const editor = createEditor(wrapFrontmatter(source));
+    try {
+      const blocks = enumerateCanonicalFeedbackBlocks(editor);
+      const wrong: string[] = [];
+      let checked = 0;
+      let exact = 0;
+
+      for (let position = 1; position < editor.state.doc.content.size; position += 1) {
+        const expected = statedLine(editor, position);
+        if (expected === null) continue;
+        checked += 1;
+        select(editor, position);
+        const range = resolveAiReferenceLines(
+          source,
+          blocks,
+          describeAiReferenceSelection(editor.state)
+        );
+        if (!range) continue;
+        if (range.startLine === expected && range.endLine === expected) exact += 1;
+        else if (expected < range.startLine || expected > range.endLine) {
+          wrong.push(`L${expected} -> L${range.startLine}-${range.endLine}`);
+        }
+      }
+
+      expect(checked).toBeGreaterThan(3000);
+      expect([...new Set(wrong)]).toEqual([]);
+      // The one line this harness cannot verify has inline HTML, whose editor
+      // extension is not loaded here; it resolves to no line, never a wrong one.
+      expect(exact / checked).toBeGreaterThan(0.95);
+    } finally {
+      editor.destroy();
+    }
+  }, 180_000);
+});
