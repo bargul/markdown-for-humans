@@ -756,8 +756,12 @@ function immediateUpdate() {
   if (!editor || isFeedbackEditingLocked()) return;
 
   try {
-    const result = getDocumentSyncController().sendNow('save-policy-enforce');
-    if (result.status === 'disposed') return;
+    // A read-only document was not edited here, and writing this view's
+    // Markdown would remove the content it cannot hold. Save the file as it is.
+    if (!sourceLossGuard?.isLocked()) {
+      const result = getDocumentSyncController().sendNow('save-policy-enforce');
+      if (result.status === 'disposed') return;
+    }
 
     console.log('[MD4H] Immediate save triggered');
 
@@ -3090,6 +3094,9 @@ export const __testing = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setMockEditor(mockEditor: any) {
     editor = mockEditor;
+  },
+  setSourceLossGuardForTests(guard: SourceLossGuard | null) {
+    sourceLossGuard = guard;
   },
   setFeedbackReviewControllerForTests(controller: FeedbackReviewController | null) {
     feedbackReviewController = controller;
