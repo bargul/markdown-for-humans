@@ -51,7 +51,7 @@ Pick one:
 ### The WYSIWYG editor surface
 
 - Top **formatting toolbar** (Codicon icons) with buttons and dropdowns.
-- A clean reading layout: serif body typography, generous spacing, theme-aware colors.
+- A clean reading layout: body text in the VS Code font (or the font set in `markdownForHumans.font.family`), generous spacing, theme-aware colors.
 
 ### VS Code integration surfaces
 
@@ -190,7 +190,8 @@ Pick one:
 **Expected**
 
 - Link is created/edited correctly in Markdown.
-- Clicking a link should not unexpectedly navigate while editing (links are not “open-on-click” in the editor).
+- A plain click on a link only places the caret. `Cmd/Ctrl`+click opens it.
+- A link to another Markdown file opens that file in this editor, including a link with a section (`guide.md#install`) or encoded characters (`my%20notes.md`).
 
 ### 5.7 Search overlay (in-document)
 
@@ -265,7 +266,7 @@ Pick one:
     A-->B
     ```
 - Single click highlights the block and shows “Double-click to edit”.
-- Double click opens a modal editor (textarea), `Cmd/Ctrl+S` saves inside the modal.
+- Double click opens a modal editor (textarea), `Cmd/Ctrl+S` saves inside the modal, Escape closes it without saving.
 
 **What to do**
 
@@ -358,6 +359,42 @@ Hover an image to reveal a **three-dots** menu, with:
 - Unsaved changes are saved first and the toast says so. An untitled file is refused with a message. During Feedback the file is not saved or changed.
 - A toast shows the copied reference. No dialog opens.
 
+### 5.12b Paste as plain text
+
+**How to use**
+
+- Copy formatted text (from a web page or a VS Code code editor), then press `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS), or run Command Palette → “Markdown Editor for Humans: Paste as Plain Text”.
+- Repeat with the caret in: a paragraph, a heading, a table cell, a code block.
+- Copy text that holds Markdown syntax (`**bold**`, or a line that starts with `#` or `-`) and paste it the same way. Try each of the three choices, and dismiss the picker once.
+
+**Expected**
+
+- The text arrives as written: no bold, links or colors from the source, nothing converted from HTML or Markdown, and no code block is created.
+- Paragraph: a single newline is a line break, a blank line starts a new paragraph. Table cell: the text stays in the cell. Heading: the first line joins the heading and the rest follow as paragraphs. Code block: the text is inserted exactly.
+- One undo removes the paste and nothing typed before it.
+- Text with Markdown syntax opens a picker titled “Markdown Editor for Humans: Paste as Plain Text” with **Paste as code**, **Paste as Markdown** and **Paste as plain text**. Dismissing it pastes nothing.
+- With focus in a terminal or an input box, the shortcut keeps its normal VS Code behavior.
+
+### 5.12c Warning before the editor drops Markdown it cannot keep
+
+Use three files: one with `<video src="demo.mp4" controls></video>` on its own line, one with a paragraph holding `<mark>` and `<u>`, one with `Not \*italic\* here.`
+
+**What to do**
+
+- Open the `<video>` file. Try to type, then press `Cmd/Ctrl+S`. Click **Open source view (split)**. Click **Edit anyway**, then type.
+- With the `<video>` file open and still read-only, change it on disk (for example from a terminal) so it still holds the tag.
+- Open the `<mark>` file and edit that paragraph. Click **Undo** in the notice. Edit it again, then edit a different paragraph and click **Undo**.
+- Open the escape file and edit that paragraph. Close the notice and edit the paragraph again.
+- Switch the display language to one of the five translated languages and repeat the first step.
+
+**Expected**
+
+- `<video>` file: a banner says “This file has content the editor cannot keep: <video>. Any edit here removes it from the file.” Typing changes nothing. Saving leaves the file byte-identical. The source view opens and the rich view stays read-only. After **Edit anyway** the banner goes and edits work; the saved file no longer has the tag.
+- After the change on disk, the new content loads and the banner is back.
+- `<mark>` file: the edit goes through and a notice names `<mark>` and `<u>` with **Undo**, **Open source view (split)** and **Close**. **Undo** restores the tags and removes the notice. When **Undo** steps back an edit in another block, the notice stays until the tagged block is restored.
+- Escape file: a general notice says the edit changed how the block reads in the file. Once closed, it does not come back for that document until it is reopened.
+- A file with only kept content (`<kbd>`, comments, link reference definitions) shows no banner.
+
 ### 5.13 Pasting code: copy button vs. copying from a source file
 
 This is **intentional, non-configurable behavior** — the editor's paste handling looks at what the clipboard actually contains, not a user setting, so the same paste action can produce different results depending on where the content was copied from. Both outcomes below are correct.
@@ -432,6 +469,51 @@ Open settings via:
 - `markdownForHumans.imagePathBase` (`relativeToDocument` or `workspaceFolder`)
 - `markdownForHumans.chromePath` (PDF export)
 - `markdownForHumans.imageResize.skipWarning`
+- `markdownForHumans.zoom` (50 to 200)
+- `markdownForHumans.font.family`, `font.weight`, `font.lineHeight`, `font.letterSpacing`, `font.wordSpacing`, `font.useEditorFont` (see 5.16a)
+- `markdownForHumans.paragraph.spacingBefore`, `paragraph.spacingAfter`
+- `markdownForHumans.blankLines.mode` (`strip` or `preserve`)
+- `markdownForHumans.enableMath` (reopen the editor after changing it)
+- `markdownForHumans.formattingShortcuts.enabled` (also toggled with `Ctrl+Alt+B`, `Cmd+Alt+B` on macOS)
+
+### 5.16a Font and readability settings
+
+**What to do**
+
+- With two Markdown files open in the editor, set `markdownForHumans.font.family` to a font installed on the machine, then to a name that is not installed.
+- Change `font.weight` (for example `500`), `font.lineHeight` (`1.8`), `font.letterSpacing` (`0.05`) and `font.wordSpacing` (`0.16`), one at a time.
+- Set `markdownForHumans.zoom` to `50`, `150` and `200`.
+- Turn on `font.useEditorFont` with an `editor.fontFamily` set, and again with a different value under `"[markdown]"` in settings.json.
+- Reset every setting, then export to PDF and Word with a font set.
+
+**Expected**
+
+- Each change applies at once in both open editors, without a reload.
+- Body text and headings use the chosen font. Code blocks stay monospace; math and Mermaid diagrams keep their own fonts.
+- A font that is not installed falls back to the standard font, with no error.
+- Weight and line height change body text; headings and bold text keep their own weight, and headings and code keep their own line height.
+- `font.useEditorFont` uses the VS Code editor font, weight and size, and the `"[markdown]"` values win when present. `font.family` and `font.weight` take priority once changed.
+- At the defaults the editor looks the same as before these settings existed.
+- PDF and Word exports are not affected by any of these settings.
+
+### 5.16b Interface languages
+
+**What to do**
+
+- Run **Configure Display Language** and switch to each of: 中文(简体), 日本語, Español, Português (Brasil), Русский. Then switch to a language that is not shipped (for example Deutsch).
+- In each language check: the toolbar tooltips, the table right-click menu, the image menu, the link dialog, a Feedback round, the Command Palette entries, the Settings descriptions, the status bar word count.
+- Open a file with Chinese or Japanese text and read the word count.
+- Finish a Feedback round in a translated language and open the sealed file.
+
+**Expected**
+
+- The interface text is in the chosen language, with no clipped or overlapping labels (check the Feedback toolbar in a narrow split).
+- The Bold, Italic and Strikethrough buttons show a letter that fits the language.
+- A language that is not shipped shows English. So does a shipped language whose Language Pack is not installed (for example VS Code started with `--locale=ja` in a fresh profile).
+- **Configure Display Language** installs the Language Pack when it is missing and asks to restart.
+- In **Open With...** the editor is listed as the translated “Visual Editor” label; the extension name stays “Markdown Editor for Humans”.
+- Chinese and Japanese text is counted by character.
+- The feedback file and the handoff prompt are in English in every language.
 
 ### 5.17 Feedback reliability and split views
 
