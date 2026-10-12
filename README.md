@@ -109,7 +109,7 @@ The editor follows your VS Code display language. Menus, dialogs, messages, comm
 | Português do Brasil (Portuguese, Brazil) | Português (Brasil) |
 | Русский (Russian) | Русский |
 
-- **Switch language:** run **Configure Display Language** from the Command Palette and pick one. Any other display language shows English.
+- **Switch language:** run **Configure Display Language** from the Command Palette and pick one. VS Code installs that language's Language Pack if you do not have it, then asks to restart. Any other display language shows English, and so does a language whose Language Pack is not installed.
 - **Word count** counts Chinese and Japanese text by character, the way word processors do.
 - **Help us get it right.** These translations were drafted and cross-checked by AI against VS Code's own wording, and no native speaker has reviewed them yet. If something reads wrong, or you want another language, see [Translations](./l10n/README.md) or [open an issue](https://github.com/concretios/markdown-for-humans/issues).
 
@@ -162,7 +162,7 @@ Use the **Image** toolbar button, which opens a dialog with a file picker, or pa
 Click the **Source** button in the toolbar to open the source beside the rendered view.
 
 **How do I change the language?**
-Run **Configure Display Language** from the Command Palette and pick one of the six [languages](#languages). The editor has no language setting of its own; it follows VS Code.
+Run **Configure Display Language** from the Command Palette and pick one of the six [languages](#languages). VS Code installs that language's Language Pack if needed and asks to restart; you do not have to find it yourself. The editor has no language setting of its own; it follows VS Code.
 
 **How do I change the font or the text size?**
 Click the gear in the editor toolbar and set `markdownForHumans.font.family` to a font installed on your computer. `markdownForHumans.zoom` changes the size of everything in the editor. See [Readable Your Way](#readable-your-way).

@@ -509,7 +509,8 @@ Open settings via:
 
 - The interface text is in the chosen language, with no clipped or overlapping labels (check the Feedback toolbar in a narrow split).
 - The Bold, Italic and Strikethrough buttons show a letter that fits the language.
-- A language that is not shipped shows English.
+- A language that is not shipped shows English. So does a shipped language whose Language Pack is not installed (for example VS Code started with `--locale=ja` in a fresh profile).
+- **Configure Display Language** installs the Language Pack when it is missing and asks to restart.
 - In **Open With...** the editor is listed as the translated “Visual Editor” label; the extension name stays “Markdown Editor for Humans”.
 - Chinese and Japanese text is counted by character.
 - The feedback file and the handoff prompt are in English in every language.

@@ -75,6 +75,11 @@ Text pasted with `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS) is saved as written. Wh
 ### Translations have had no native review
 The five translated languages (Simplified Chinese, Japanese, Spanish, Brazilian Portuguese, Russian) were drafted and checked by AI. No native speaker has reviewed them. Feedback files and the prompt handed to your agent stay in English. Corrections: see [Translations](./l10n/README.md).
 
+### The editor shows English in a translated VS Code
+A translation shows only when VS Code has the Language Pack for that language. **Configure Display Language** installs it for you. If VS Code was set to a language another way, for example started with `--locale`, and the pack is not installed, the editor shows English. Any display language other than the six shipped ones also shows English. Among Open VSX editors, only Cursor has been tested (Simplified Chinese and Japanese, with the Language Pack from its marketplace); VSCodium and Devin Desktop have not been tested.
+
+**Workaround:** Run **Configure Display Language**, pick the language, and restart when asked.
+
 ### Font settings do not apply to exports
 `markdownForHumans.font.*` change the editor only. PDF and Word exports keep their own fonts. A font that is not installed on your computer is ignored and the standard font is used. Code blocks stay monospace, and math and diagrams keep their own fonts.
 
