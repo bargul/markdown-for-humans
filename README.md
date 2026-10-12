@@ -96,6 +96,10 @@ Changes apply at once to every open editor. Code blocks stay monospace, and math
 
 ## Languages
 
+Use the editor in your own language: 简体中文, 日本語, Español, Português do Brasil, Русский or English.
+
+![The same document with the table menu shown in English, Simplified Chinese, Japanese, Spanish, Brazilian Portuguese and Russian](https://raw.githubusercontent.com/concretios/markdown-for-humans/cc68979d1051ed14982fa95d4dca2c1ff98011f2/marketplace-assets/gifs/v2/languages.gif)
+
 The editor follows your VS Code display language. Menus, dialogs, messages, command names and settings are available in:
 
 | Language | Display language to pick |
