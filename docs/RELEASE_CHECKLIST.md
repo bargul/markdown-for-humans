@@ -83,7 +83,9 @@ git push origin --tags
   - [ ] Toolbar formatting
 
 ### Documentation Review
-- [ ] README.md - badges, links, features accurate
+- [ ] README.md - badges, links, features accurate; the Configuration table lists every setting in `package.json`
+- [ ] KNOWN_ISSUES.md - version line current, limits of new features added, fixed entries removed
+- [ ] l10n/README.md - status table matches the shipped languages
 - [ ] CHANGELOG.md - version section complete, format correct
 - [ ] Legal docs - "Last Updated" dates current (PRIVACY_POLICY, TERMS_OF_USE, EULA)
 
@@ -112,7 +114,7 @@ git push origin --tags
 - [ ] Run `vsce publish` (publishes current version)
 
 **Alternative: Web upload**
-- [ ] Build: `npm run package:marketplace`
+- [ ] Build: `npm run package:release`
 - [ ] Upload `.vsix` at https://marketplace.visualstudio.com/manage
 
 ### Publish to Open VSX Registry (For Cursor, Devin Desktop, VSCodium & More)

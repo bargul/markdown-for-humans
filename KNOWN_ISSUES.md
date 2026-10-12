@@ -16,6 +16,17 @@ Dragging images from the Cursor workspace explorer into the editor is often not 
 ### Word export omits embedded images
 Word (DOCX) export does not embed images. PDF export is not affected by this specific gap. Both formats also omit images the editor itself cannot show (paths outside the document/workspace roots, `http:` URLs). Keep images next to the document or inside the workspace; prefer relative paths. Remote HTTPS may embed in PDF; Word skips remote HTTP/HTTPS.
 
+### Word export keeps the text, not all of the layout
+Word (DOCX) export writes headings, paragraphs, lists, quotes, code blocks and block math. It is simpler than the PDF:
+
+- **Lists:** bold, italic and inline code inside a list item export as plain text. Numbered lists export as bullets. A nested item is joined onto its parent's line.
+- **Tables:** each cell exports as its own paragraph, so the grid is lost.
+- **Links:** the link text is exported without its address.
+- **Quotes and headings:** exported as plain text, without inline formatting. The paragraphs of a quote are joined into one.
+- **Block math:** exported as its LaTeX source.
+
+**Workaround:** Use PDF export when layout matters.
+
 ### SVG images
 Raw inline `<svg>` markup and Marp's `w:1000` alt-text directive are not interpreted. An unsized SVG fills the reading column, the same way the built-in preview does. Word export does not include SVG images (see above).
 
@@ -32,8 +43,8 @@ Text after a line break inside a task item can disappear on reopen (e.g. `- [ ] 
 ### HTML the editor cannot keep
 The rich view has no place for some raw HTML. Two cases:
 
-- **Removed by any edit:** `<video>`, `<audio>`, `<iframe>`, inline `<svg>`, `<style>`, `<script>`, a standalone `<a name="...">` anchor, `<dl>` and `<figure>` with `<figcaption>`. The file is intact until you edit. A notice names the content and the editor stays read-only until you choose **Edit anyway**.
-- **Removed when you edit that block:** inline tags such as `<mark>`, `<u>`, `<ins>`, `<abbr>`, `<span>`, `<font>`, `<b>`, `<i>`, a `<br>` in a paragraph, `<a id>` and `<a target>`; and one-line blocks such as `<h1 align="center">`, `<div>`, `<center>`, `<p>`, `<pre><code>`. A notice names what was removed and offers **Undo**.
+- **Removed by any edit:** `<video>`, `<audio>`, `<iframe>`, inline `<svg>`, `<style>`, `<script>`, a standalone `<a name="...">` or `<a id="...">` anchor, a `<br>` on a line of its own, `<dl>` and `<figure>` with `<figcaption>`. The file is intact until you edit. A notice names the content and the editor stays read-only until you choose **Edit anyway**. Saving while it is read-only leaves the file as it is. **Open source view (split)** opens the Markdown beside the editor; it does not unlock the rich view. The choice is not remembered: the file is read-only again the next time it is opened, and after it changes on disk.
+- **Removed when you edit that block:** inline tags such as `<mark>`, `<u>`, `<ins>`, `<abbr>`, `<span>`, `<font>`, `<b>`, `<i>`, a `<br>` in a paragraph, `<a id>` and `<a target>`; and one-line blocks such as `<h1 align="center">`, `<div>`, `<center>`, `<p>`, `<pre><code>`. A notice names what was removed and offers **Undo**. An edit that changes only how the block is written (a dropped `\*` escape, spaces inside a code span) shows a general notice instead; once closed, it does not appear again for that document until it is reopened.
 
 Kept: comments, wrappers with blank lines around their content (`<div align="center">`, `<details>`), `<kbd>`, `<sub>`, `<sup>`, `<img>` and HTML tables. The first list was confirmed in VS Code for `<video>` and the anchor; the rest comes from automated tests outside VS Code.
 
@@ -52,6 +63,20 @@ In a block you edit, escaped characters such as `\*` may be saved without the ba
 Text pasted with `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS) is saved as written. When it contains Markdown syntax (`**bold**`, or a line that starts with `#` or `-`), the editor asks how to paste it. If you choose **Paste as plain text**, it shows as plain characters after the paste and is read as Markdown the next time the file is opened.
 
 **Workaround:** Choose **Paste as code** for text that must stay literal.
+
+### Copy Reference for AI
+- **Multi-root workspaces:** the path is relative to the file's own workspace folder and does not include the folder's name, so two folders can give the same reference.
+- **Files outside the workspace** are copied with their absolute path.
+- **No line numbers:** if any block of the document cannot be matched to the saved file, the reference is the path alone, for every position in that file. The message says so.
+- **Saves first:** a file with unsaved changes is saved before the reference is copied, so the lines match what the agent reads. During a Feedback review the file is not saved; with unsaved changes nothing is copied.
+- **Untitled files** have no path and are refused with a message.
+- **File names with `#` or `"`** are copied as they are, so the reference can be read wrongly by the agent.
+
+### Translations have had no native review
+The five translated languages (Simplified Chinese, Japanese, Spanish, Brazilian Portuguese, Russian) were drafted and checked by AI. No native speaker has reviewed them. Feedback files and the prompt handed to your agent stay in English. Corrections: see [Translations](./l10n/README.md).
+
+### Font settings do not apply to exports
+`markdownForHumans.font.*` change the editor only. PDF and Word exports keep their own fonts. A font that is not installed on your computer is ignored and the standard font is used. Code blocks stay monospace, and math and diagrams keep their own fonts.
 
 ### HTML comments inside links, emphasis, or before text
 Comments are kept on their own lines, inside lists and blockquotes, and inside a line of text (`Text <!-- note --> more`). Two placements are still dropped when the file is saved from the editor: a comment inside link text or emphasis (`**bold <!-- note --> text**`), and a comment at the start of a line with text after it on that line (`<!-- note --> text`).
@@ -116,8 +141,12 @@ Diagrams that fail conversion in the webview may not appear correctly in PDF/Wor
 
 ## Recently fixed
 
-- **Enter in table cells** — maps to hard break (`<br>`) so GFM tables stay valid (`TableCellEnterHardBreak`).
-- **Enter at gap cursor before image** — inserts before/after the containing block correctly.
+Fixed in 0.4.4; see [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+- **Feedback and link reference definitions:** Feedback starts on a document that has `[label]: https://...` definitions.
+- **Duplicate link reference definitions** are no longer deleted on save.
+- **Word export** keeps code blocks and block math, and shows checklist items as ☐ and ☑.
+- **Links to other Markdown files** open in this editor, including links with a section (`guide.md#install`) or encoded characters.
 
 ---
 

@@ -2,6 +2,8 @@
 
 **Edit Markdown like a document. Commit it like code.** A rich, readable Markdown editor inside VS Code, Cursor and Devin Desktop (formerly Windsurf) that keeps your file as plain Markdown.
 
+**In six languages:** English, 简体中文, 日本語, Español, Português (Brasil) and Русский. See [Languages](#languages).
+
 ![Open VSX](https://img.shields.io/open-vsx/v/concretio/markdown-for-humans?label=Open%20VSX&logo=eclipse) ![Open VSX downloads](https://img.shields.io/open-vsx/dt/concretio/markdown-for-humans?label=downloads) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 ![Open a Markdown file and write in the rendered view](https://raw.githubusercontent.com/concretios/markdown-for-humans/77fe1f0d8a388da2dd20ede7efb6065dc2e1f96a/marketplace-assets/gifs/v2/hero.gif)
@@ -21,7 +23,7 @@
 - **Review what your AI agent wrote.** Comment on the rendered plan, then hand a sealed feedback file to Claude Code, Codex or any agent.
 - **Tables and images without syntax.** Edit tables visually; resize and rename images from the editor.
 - **Readable your way, in your language.** Set the font, spacing and zoom you read best in; the interface comes in six languages.
-- **Your file stays your file.** Blocks you do not edit keep their exact source on save, so Git diffs show only what you changed.
+- **Your file stays your file.** Blocks you do not edit keep their exact source on save, so Git diffs show only what you changed. The editor warns you before an edit would remove HTML it cannot keep.
 - **Opt-in, never a takeover.** It opens only when you choose it, and you can make it your default for `.md` files.
 
 ---
@@ -90,7 +92,7 @@ A reader with ADHD asked for font options ([issue 86](https://github.com/concret
 - **Size:** zoom the whole editor from 50% to 200%
 - **Or match your code editor:** one setting uses your VS Code editor font, including `"[markdown]"` overrides
 
-Changes apply at once to every open editor. Code blocks stay monospace, and math and diagrams keep their own fonts. All of it is under `markdownForHumans.font.*` and `markdownForHumans.zoom` in [Configuration](#configuration).
+Changes apply at once to every open editor. Code blocks stay monospace, and math and diagrams keep their own fonts. No special font ships with the editor; you pick one you have installed. Line height, letter spacing and word spacing are the settings that dyslexia style guides give recommendations for. All of it is under `markdownForHumans.font.*` and `markdownForHumans.zoom` in [Configuration](#configuration).
 
 ---
 
@@ -117,10 +119,10 @@ The editor follows your VS Code display language. Menus, dialogs, messages, comm
 
 ![Edit Mermaid source beside the rendered view and watch the diagram update](https://raw.githubusercontent.com/concretios/markdown-for-humans/77fe1f0d8a388da2dd20ede7efb6065dc2e1f96a/marketplace-assets/gifs/v2/mermaid.gif)
 
-- **Mermaid diagrams:** edit the source beside the rendered view and the diagram updates as you type; 15 templates; double-click a diagram to edit it in place
+- **Mermaid diagrams:** edit the source beside the rendered view and the diagram updates as you type; 15 templates; double-click a diagram to edit its source in a dialog
 - **Math:** LaTeX equations rendered with KaTeX
 - **GitHub alerts:** Note, Tip, Important, Warning and Caution callouts
-- **Code blocks:** syntax highlighting for 37 languages, with a copy button
+- **Code blocks:** syntax highlighting for 37 languages, including ABAP and C#, with a copy button
 
 ---
 
@@ -130,9 +132,11 @@ The editor follows your VS Code display language. Menus, dialogs, messages, comm
 
 - **Document outline** to jump between headings in long documents
 - **In-document search** with match highlighting
-- **Paste as plain text** with `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS): the clipboard's text with no formatting and no Markdown conversion
+- **Links:** `Ctrl`+click (`Cmd`+click on macOS) opens a link; a plain click places the caret so you can edit the text. A link to another Markdown file opens in this editor
+- **Paste as plain text** with `Ctrl+Shift+V` (`Cmd+Shift+V` on macOS): the clipboard's text with no formatting and no Markdown conversion. If the text holds Markdown syntax, the editor asks whether to paste it as code, as Markdown or as plain text
+- **Check links and images:** the **Audit** toolbar button lists broken links and images in the document
 - **Export** to PDF or Word for people outside your repo. PDF export uses Chrome or Chromium on your machine; Word export has limits listed in [Known Issues](./KNOWN_ISSUES.md)
-- **Word count and reading time** in the status bar
+- **Word count** in the status bar; hover it for reading time, or click it for full statistics
 - **Theme aware:** follows your VS Code theme, fonts and font size
 
 ---
@@ -145,14 +149,23 @@ The two work side by side: both appear in the editor picker, and you choose per 
 **Will it change my file?**
 Only the blocks you edit. Unedited blocks keep their exact source on save. Edited blocks use a standard Markdown form, listed in [Known Issues](./KNOWN_ISSUES.md).
 
+**What happens to HTML the editor cannot show?**
+It tells you before anything is lost. If a file has content with no place in the rich view, such as `<video>`, `<iframe>` or a `<br>` on a line of its own, a notice names it and the editor is read-only until you click **Edit anyway**; **Open source view (split)** lets you edit the Markdown directly instead. If you edit a paragraph that holds a tag the editor cannot write back, such as `<mark>` or `<u>`, the edit goes through and a notice names what was removed, with **Undo**. The full list is in [Known Issues](./KNOWN_ISSUES.md#html-the-editor-cannot-keep).
+
 **How do I make it my default Markdown editor?**
 Right-click a `.md` file, choose **Open With...**, then **Configure default editor for '*.md'...** and pick **Visual Editor** (Markdown Editor for Humans).
 
 **Dropping an image does nothing.**
-Hold **Shift** while you drop: VS Code requires it for drops into an editor. In Cursor, drags from the workspace explorer are often not detected; use the image insert dialog or drop from Finder.
+Use the **Image** toolbar button, which opens a dialog with a file picker, or paste the image from the clipboard. In Cursor, drags from the workspace explorer are often not detected; see [Known Issues](./KNOWN_ISSUES.md).
 
 **How do I see the raw Markdown?**
 Click the **Source** button in the toolbar to open the source beside the rendered view.
+
+**How do I change the language?**
+Run **Configure Display Language** from the Command Palette and pick one of the six [languages](#languages). The editor has no language setting of its own; it follows VS Code.
+
+**How do I change the font or the text size?**
+Click the gear in the editor toolbar and set `markdownForHumans.font.family` to a font installed on your computer. `markdownForHumans.zoom` changes the size of everything in the editor. See [Readable Your Way](#readable-your-way).
 
 **How do I give my AI agent a line reference?**
 Click **@** in the toolbar, or run **Copy Reference for AI** from the Command Palette. It copies `@path#L10-14` for the caret or selection. If the file has unsaved changes it is saved first, so the lines match what the agent reads. No shortcut is assigned. You can give the command one in **Keyboard Shortcuts**; on a Mac avoid Option plus a letter, which also types a character into the document.
@@ -161,19 +174,27 @@ Click **@** in the toolbar, or run **Copy Reference for AI** from the Command Pa
 
 ## Configuration
 
-Click the gear in the editor toolbar, or open Settings (`Ctrl+,` / `Cmd+,`) and search for `markdownForHumans`. The most used settings:
+Click the gear in the editor toolbar, or open Settings (`Ctrl+,` / `Cmd+,`) and search for `markdownForHumans`. All settings:
 
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `markdownForHumans.imagePath` | `"images"` | Folder for saved images, relative to `imagePathBase` |
-| `markdownForHumans.imagePathBase` | `"relativeToDocument"` | Resolve `imagePath` from the document folder or the workspace folder |
+| `markdownForHumans.imagePathBase` | `"relativeToDocument"` | Resolve `imagePath` from the document folder or the workspace folder (`"workspaceFolder"`) |
 | `markdownForHumans.imagePreview.hover.enabled` | `true` | Show the image details overlay on hover |
 | `markdownForHumans.imageResize.skipWarning` | `false` | Resize images without the confirmation dialog |
 | `markdownForHumans.feedback.handoffPromptTemplate` | built-in prompt | Custom wording for the prompt copied by **Finish & copy**. Must include `{{feedbackFile}}`; see [Feedback Sessions](docs/FEEDBACK.md) |
 | `markdownForHumans.chromePath` | `""` | Chrome or Chromium used for PDF export; empty means auto-detect |
 | `markdownForHumans.zoom` | `100` | Size of everything in the editor, as a percentage from 50 to 200 |
 | `markdownForHumans.font.family` | `""` | Font for body text and headings: any font installed on your computer, for example `Atkinson Hyperlegible`. Code stays monospace; exports keep their own fonts |
-| `markdownForHumans.font.weight`, `.lineHeight`, `.letterSpacing`, `.wordSpacing` | `400`, `1.58`, `0`, `0` | Weight and spacing of body text. `font.useEditorFont` uses your VS Code editor font instead, including `"[markdown]"` overrides |
+| `markdownForHumans.font.weight` | `400` | Weight of body text, from 100 to 900. Headings and bold text keep their own weight |
+| `markdownForHumans.font.lineHeight` | `1.58` | Line height of body text, from 1 to 3 times the font size |
+| `markdownForHumans.font.letterSpacing` | `0` | Extra space between letters, from 0 to 0.5 of the font size |
+| `markdownForHumans.font.wordSpacing` | `0` | Extra space between words, from 0 to 1 of the font size |
+| `markdownForHumans.font.useEditorFont` | `false` | Use your VS Code editor font, weight and size for body text, including `"[markdown]"` overrides |
+| `markdownForHumans.paragraph.spacingBefore`, `.spacingAfter` | `0`, `0` | Space before and after paragraphs, in points, from 0 to 72 |
+| `markdownForHumans.blankLines.mode` | `"strip"` | Remove extra blank lines, or keep them (`"preserve"`), in the editor and the saved file |
+| `markdownForHumans.enableMath` | `true` | Render LaTeX math with KaTeX. Reopen the editor after changing it |
+| `markdownForHumans.formattingShortcuts.enabled` | `true` | Let `Ctrl/Cmd+B`, `I` and `U` format text in the editor. Turn off to keep VS Code keybindings on those keys; `Ctrl+Alt+B` (`Cmd+Alt+B` on macOS) toggles it |
 
 Requires VS Code 1.98.0 or newer in a trusted, disk-backed workspace. Compatible VS Code derivatives must provide the same desktop extension-host and webview APIs.
 
