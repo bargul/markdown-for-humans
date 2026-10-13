@@ -178,7 +178,7 @@ export class Selection {
   constructor(
     public anchor: { line: number; character: number },
     public active: { line: number; character: number }
-  ) { }
+  ) {}
 
   get isEmpty(): boolean {
     return this.anchor.line === this.active.line && this.anchor.character === this.active.character;
@@ -210,7 +210,7 @@ export class Position {
   constructor(
     public line: number,
     public character: number
-  ) { }
+  ) {}
 }
 
 // Tree item + visuals
@@ -222,12 +222,12 @@ export class TreeItem {
   constructor(
     public label: string,
     public collapsibleState?: number
-  ) { }
+  ) {}
 }
 
 export class EventEmitter<T> {
   public event = jest.fn(() => ({ dispose: jest.fn() }));
-  fire = jest.fn((_data?: T) => { });
+  fire = jest.fn((_data?: T) => {});
   dispose = jest.fn();
 }
 
@@ -241,11 +241,11 @@ export class ThemeIcon {
   constructor(
     public id: string,
     public color?: ThemeColor
-  ) { }
+  ) {}
 }
 
 export class ThemeColor {
-  constructor(public id: string) { }
+  constructor(public id: string) {}
 }
 
 export default {
@@ -270,7 +270,7 @@ export class Range {
   constructor(
     public start: Position,
     public end: Position
-  ) { }
+  ) {}
 }
 
 // Minimal WorkspaceEdit mock

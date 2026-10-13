@@ -1928,8 +1928,8 @@ window.addEventListener('message', async (event: MessageEvent) => {
           const cachedMetadata = imagePath ? getCachedImageMetadata(imagePath) : null;
           const preservedDimensions =
             cachedMetadata &&
-              cachedMetadata.dimensions.width > 0 &&
-              cachedMetadata.dimensions.height > 0
+            cachedMetadata.dimensions.width > 0 &&
+            cachedMetadata.dimensions.height > 0
               ? cachedMetadata.dimensions
               : null;
 

@@ -130,11 +130,11 @@ function setCodeBlockNormalized(editor: Editor, language: string): void {
       attrs: { language },
       content: plainText
         ? [
-          {
-            type: 'text',
-            text: plainText,
-          },
-        ]
+            {
+              type: 'text',
+              text: plainText,
+            },
+          ]
         : undefined,
     })
     .run();
@@ -682,7 +682,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         isActive: () =>
           editor.isActive('codeBlock') &&
           resolveGrammar(parseFenceInfo(editor.getAttributes('codeBlock').language).language) ===
-          resolveGrammar(language),
+            resolveGrammar(language),
       })),
     },
     {
@@ -1152,7 +1152,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         : { name: 'comment-discussion-sparkle', fallback: commentsExpanded ? '●' : '○' };
     const focusedControl =
       document.activeElement instanceof HTMLButtonElement &&
-        toolbar.contains(document.activeElement)
+      toolbar.contains(document.activeElement)
         ? document.activeElement.getAttribute('data-feedback-control')
         : null;
     const startHadFocus =
@@ -1399,41 +1399,41 @@ export function createTableMenu(editor: Editor): HTMLElement {
   const items: Array<
     | { separator: true }
     | {
-      label: string;
-      action: () => void;
-    }
+        label: string;
+        action: () => void;
+      }
   > = [
-      {
-        label: l10n.t('Add Row Before'),
-        action: () => editor.chain().focus().addRowBefore().run(),
-      },
-      {
-        label: l10n.t('Add Row After'),
-        action: () => editor.chain().focus().addRowAfter().run(),
-      },
-      {
-        label: l10n.t('Delete Row'),
-        action: () => editor.chain().focus().deleteRow().run(),
-      },
-      { separator: true },
-      {
-        label: l10n.t('Add Column Before'),
-        action: () => editor.chain().focus().addColumnBefore().run(),
-      },
-      {
-        label: l10n.t('Add Column After'),
-        action: () => editor.chain().focus().addColumnAfter().run(),
-      },
-      {
-        label: l10n.t('Delete Column'),
-        action: () => editor.chain().focus().deleteColumn().run(),
-      },
-      { separator: true },
-      {
-        label: l10n.t('Delete Table'),
-        action: () => editor.chain().focus().deleteTable().run(),
-      },
-    ];
+    {
+      label: l10n.t('Add Row Before'),
+      action: () => editor.chain().focus().addRowBefore().run(),
+    },
+    {
+      label: l10n.t('Add Row After'),
+      action: () => editor.chain().focus().addRowAfter().run(),
+    },
+    {
+      label: l10n.t('Delete Row'),
+      action: () => editor.chain().focus().deleteRow().run(),
+    },
+    { separator: true },
+    {
+      label: l10n.t('Add Column Before'),
+      action: () => editor.chain().focus().addColumnBefore().run(),
+    },
+    {
+      label: l10n.t('Add Column After'),
+      action: () => editor.chain().focus().addColumnAfter().run(),
+    },
+    {
+      label: l10n.t('Delete Column'),
+      action: () => editor.chain().focus().deleteColumn().run(),
+    },
+    { separator: true },
+    {
+      label: l10n.t('Delete Table'),
+      action: () => editor.chain().focus().deleteTable().run(),
+    },
+  ];
 
   items.forEach(item => {
     if ('separator' in item) {

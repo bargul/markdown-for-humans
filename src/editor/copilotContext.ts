@@ -33,10 +33,10 @@ const ATTACHABLE_SCHEMES = new Set(['file', 'vscode-remote', 'vscode-vfs']);
 
 /** Internal 1-based line range, not `vscode.Range`. */
 export interface CopilotChatAttachRange {
-    startLineNumber: number;
-    startColumn: number;
-    endLineNumber: number;
-    endColumn: number;
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface CopilotChatAttachRange {
  * @param scheme - `document.uri.scheme`
  */
 export function isCopilotAttachableScheme(scheme: string): boolean {
-    return ATTACHABLE_SCHEMES.has(scheme);
+  return ATTACHABLE_SCHEMES.has(scheme);
 }
 
 /**
@@ -56,7 +56,7 @@ export function isCopilotAttachableScheme(scheme: string): boolean {
  * @param range - Exact lines of the saved file, or null for the whole file
  */
 export function copilotContextFragment(range: AiReferenceLineRange | null): string {
-    return range ? `L${range.startLine}-${range.endLine}` : '';
+  return range ? `L${range.startLine}-${range.endLine}` : '';
 }
 
 /**
@@ -66,47 +66,47 @@ export function copilotContextFragment(range: AiReferenceLineRange | null): stri
  * @param range - Exact lines, 1-based and inclusive
  */
 export function toCopilotChatAttachRange(
-    documentText: string,
-    range: AiReferenceLineRange
+  documentText: string,
+  range: AiReferenceLineRange
 ): CopilotChatAttachRange {
-    const lineLengths = measureLineLengths(documentText);
-    const lastLine = Math.max(1, lineLengths.length);
-    const startLineNumber = clamp(range.startLine, 1, lastLine);
-    const endLineNumber = clamp(range.endLine, startLineNumber, lastLine);
-    return {
-        startLineNumber,
-        startColumn: 1,
-        endLineNumber,
-        // One past the final character, matching VS Code's whole-line selection.
-        endColumn: lineLengths[endLineNumber - 1] + 1,
-    };
+  const lineLengths = measureLineLengths(documentText);
+  const lastLine = Math.max(1, lineLengths.length);
+  const startLineNumber = clamp(range.startLine, 1, lastLine);
+  const endLineNumber = clamp(range.endLine, startLineNumber, lastLine);
+  return {
+    startLineNumber,
+    startColumn: 1,
+    endLineNumber,
+    // One past the final character, matching VS Code's whole-line selection.
+    endColumn: lineLengths[endLineNumber - 1] + 1,
+  };
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
-    return Math.min(Math.max(value, minimum), maximum);
+  return Math.min(Math.max(value, minimum), maximum);
 }
 
 /** Character count of every line, without the line separator. */
 function measureLineLengths(documentText: string): number[] {
-    const lengths: number[] = [];
-    let current = 0;
-    for (let index = 0; index < documentText.length; index += 1) {
-        const code = documentText.charCodeAt(index);
-        if (code === 13) {
-            lengths.push(current);
-            current = 0;
-            if (documentText.charCodeAt(index + 1) === 10) {
-                index += 1;
-            }
-        } else if (code === 10) {
-            lengths.push(current);
-            current = 0;
-        } else {
-            current += 1;
-        }
+  const lengths: number[] = [];
+  let current = 0;
+  for (let index = 0; index < documentText.length; index += 1) {
+    const code = documentText.charCodeAt(index);
+    if (code === 13) {
+      lengths.push(current);
+      current = 0;
+      if (documentText.charCodeAt(index + 1) === 10) {
+        index += 1;
+      }
+    } else if (code === 10) {
+      lengths.push(current);
+      current = 0;
+    } else {
+      current += 1;
     }
-    lengths.push(current);
-    return lengths;
+  }
+  lengths.push(current);
+  return lengths;
 }
 
 /**
@@ -114,21 +114,21 @@ function measureLineLengths(documentText: string): number[] {
  * must be present and the chat command registered.
  */
 export async function isCopilotChatAvailable(): Promise<boolean> {
-    return isCopilotChatExtensionPresent() && (await isCopilotChatCommandAvailable());
+  return isCopilotChatExtensionPresent() && (await isCopilotChatCommandAvailable());
 }
 
 /** The Copilot Chat extension is installed and activated. */
 export function isCopilotChatExtensionPresent(): boolean {
-    return vscode.extensions.getExtension(COPILOT_CHAT_EXTENSION_ID) !== undefined;
+  return vscode.extensions.getExtension(COPILOT_CHAT_EXTENSION_ID) !== undefined;
 }
 
 /** The workbench has registered its chat-open command. */
 async function isCopilotChatCommandAvailable(): Promise<boolean> {
-    try {
-        const commands = await vscode.commands.getCommands(true);
-        return commands.includes(COPILOT_CHAT_OPEN_COMMAND);
-    } catch (error) {
-        console.warn('[MD4H] Could not enumerate commands for GitHub Copilot:', error);
-        return false;
-    }
+  try {
+    const commands = await vscode.commands.getCommands(true);
+    return commands.includes(COPILOT_CHAT_OPEN_COMMAND);
+  } catch (error) {
+    console.warn('[MD4H] Could not enumerate commands for GitHub Copilot:', error);
+    return false;
+  }
 }
