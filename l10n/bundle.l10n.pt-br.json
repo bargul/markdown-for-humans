@@ -894,5 +894,13 @@
   "This edit changed how the block reads in the file, because the editor rewrote its Markdown.": "Esta edição mudou como o bloco é lido no arquivo, porque o editor reescreveu o Markdown dele.",
   "This edit removed {0} from the block, because the editor cannot keep it.": "Esta edição removeu {0} do bloco, porque o editor não consegue mantê-lo.",
   "This edit removed {0} from the block, because the editor cannot keep them.": "Esta edição removeu {0} do bloco, porque o editor não consegue mantê-los.",
-  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "Este arquivo tem conteúdo que o editor não consegue manter: {0}. Qualquer edição aqui o remove do arquivo."
+  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "Este arquivo tem conteúdo que o editor não consegue manter: {0}. Qualquer edição aqui o remove do arquivo.",
+  "Add to GitHub Copilot": "Adicionar ao GitHub Copilot",
+  "Added {0} to GitHub Copilot (context {1})": "{0} adicionado ao GitHub Copilot (contexto {1})",
+  "Added {0} to GitHub Copilot without line numbers: this spot could not be matched to the saved file.": "{0} adicionado ao GitHub Copilot sem números de linha: este trecho não pôde ser correspondido ao arquivo salvo.",
+  "Could not add the selection to GitHub Copilot.": "Não foi possível adicionar a seleção ao GitHub Copilot.",
+  "GitHub Copilot is not available. Copied {0} to the clipboard instead.": "O GitHub Copilot não está disponível. {0} foi copiado para a área de transferência.",
+  "Not added: the file has changes that could not be saved.": "Não adicionado: o arquivo tem alterações que não puderam ser salvas.",
+  "Saved the file and added {0} to GitHub Copilot (context {1})": "O arquivo foi salvo e {0} foi adicionado ao GitHub Copilot (contexto {1})",
+  "This document cannot be attached to GitHub Copilot. Copied {0} to the clipboard instead.": "Este documento não pode ser anexado ao GitHub Copilot. {0} foi copiado para a área de transferência."
 }

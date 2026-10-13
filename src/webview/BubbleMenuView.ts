@@ -144,6 +144,16 @@ function setCodeBlockNormalized(editor: Editor, language: string): void {
 let isEditorFocused = false;
 let focusChangeListener: ((e: Event) => void) | null = null;
 
+// Whether GitHub Copilot can take document context. The host reports it; the
+// Add to GitHub Copilot button is shown only while it is true.
+let copilotChatAvailable = false;
+
+/** Show or hide the GitHub Copilot actions, per the host's availability report. */
+export function setToolbarCopilotVisible(visible: boolean): void {
+  copilotChatAvailable = visible;
+  updateToolbarStates();
+}
+
 type ToolbarIcon = {
   name?: string;
   // Inline SVG markup. When set it takes precedence over `name`/`fallback` and
@@ -185,6 +195,9 @@ type ToolbarActionButton = {
   // runs against an unfocused editor. Buttons that read live editor state
   // (selection, focus) at click time should set this to true.
   preserveEditorFocus?: boolean;
+  // Whether the button is shown at all, e.g. because its feature needs another
+  // extension. Hidden buttons are removed from the layout and the tab order.
+  isVisible?: () => boolean;
   visibleText?: string;
   feedbackData?: 'start';
 };
@@ -375,6 +388,20 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       },
       isActive: () => false,
       className: 'copy-reference-button',
+    },
+    {
+      type: 'button',
+      label: l10n.t('Add to GitHub Copilot'),
+      title: l10n.t('Add to GitHub Copilot'),
+      icon: { name: 'copilot', fallback: 'GH' },
+      action: () => {
+        window.dispatchEvent(new CustomEvent('addToCopilot'));
+      },
+      isActive: () => false,
+      className: 'copilot-add-button',
+      // GitHub Copilot takes the context only when it is installed and its
+      // chat is there, so the button appears only then.
+      isVisible: () => copilotChatAvailable,
     },
     { type: 'separator' },
     {
@@ -825,6 +852,9 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       const active = config.isActive ? config.isActive() : false;
       element.classList.toggle('active', Boolean(active));
       element.setAttribute('aria-pressed', String(Boolean(active)));
+
+      // Capability-gated buttons are absent until their feature is available.
+      element.hidden = config.isVisible ? !config.isVisible() : false;
 
       // Check if button requires focus
       const enabled = !feedbackTransitionLocked && (config.requiresFocus ? isEditorFocused : true);

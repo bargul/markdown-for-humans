@@ -894,5 +894,13 @@
   "This edit changed how the block reads in the file, because the editor rewrote its Markdown.": "Esta edición cambió cómo se lee el bloque en el archivo, porque el editor reescribió su Markdown.",
   "This edit removed {0} from the block, because the editor cannot keep it.": "Esta edición quitó {0} del bloque, porque el editor no puede conservarlo.",
   "This edit removed {0} from the block, because the editor cannot keep them.": "Esta edición quitó {0} del bloque, porque el editor no puede conservarlos.",
-  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "Este archivo tiene contenido que el editor no puede conservar: {0}. Cualquier edición aquí lo quita del archivo."
+  "This file has content the editor cannot keep: {0}. Any edit here removes it from the file.": "Este archivo tiene contenido que el editor no puede conservar: {0}. Cualquier edición aquí lo quita del archivo.",
+  "Add to GitHub Copilot": "Añadir a GitHub Copilot",
+  "Added {0} to GitHub Copilot (context {1})": "Se añadió {0} a GitHub Copilot (contexto {1})",
+  "Added {0} to GitHub Copilot without line numbers: this spot could not be matched to the saved file.": "Se añadió {0} a GitHub Copilot sin números de línea: esta ubicación no pudo coincidir con el archivo guardado.",
+  "Could not add the selection to GitHub Copilot.": "No se pudo añadir la selección a GitHub Copilot.",
+  "GitHub Copilot is not available. Copied {0} to the clipboard instead.": "GitHub Copilot no está disponible. Se copió {0} al portapapeles en su lugar.",
+  "Not added: the file has changes that could not be saved.": "No se añadió: el archivo tiene cambios que no se pudieron guardar.",
+  "Saved the file and added {0} to GitHub Copilot (context {1})": "Se guardó el archivo y se añadió {0} a GitHub Copilot (contexto {1})",
+  "This document cannot be attached to GitHub Copilot. Copied {0} to the clipboard instead.": "Este documento no se puede adjuntar a GitHub Copilot. Se copió {0} al portapapeles en su lugar."
 }

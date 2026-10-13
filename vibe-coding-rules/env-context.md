@@ -97,7 +97,6 @@ Public Feedback commands wait for the generation-validated controller-ready
 signal before posting to the original active panel. The bounded startup wait is
 cancelled on hide, reload or disposal; queue acceptance is not session activation.
 
-
 - A new Start and a durable-draft Resume inspect every split first. Divergent dirty split digests fail before any flush chooses a winner.
 - The host flushes all splits, drains the document queue, saves, reads exact bytes, and binds the `TextDocument` version plus text SHA-256 to the saved-byte SHA-256.
 - The saved source is applied back to every split. Only the owner enumerates canonical blocks after that authoritative apply.
@@ -154,36 +153,37 @@ Shared-runner gates do not prove physical Windows i5/16 GB p95 latency, memory u
 
 ## Key Files
 
-| Concern                     | File                                                                                             |
-| --------------------------- | ------------------------------------------------------------------------------------------------ |
-| Activation and commands     | `src/extension.ts`                                                                               |
-| VS Code adapter             | `src/editor/MarkdownEditorProvider.ts`                                                           |
-| Ordered document work       | `src/editor/documentEditCoordinator.ts`                                                          |
-| Large-document edit range   | `src/editor/minimalTextEdit.ts`                                                                  |
-| Sync protocol               | `src/shared/documentSyncProtocol.ts`                                                             |
-| Renderer sync controller    | `src/webview/documentSyncController.ts`                                                          |
-| TipTap composition          | `src/webview/editor.ts`                                                                          |
-| Table Enter → hardBreak     | `src/webview/extensions/tableCellEnterHardBreak.ts`, `src/webview/extensions/htmlPreservingTable.ts` |
-| Code block node view        | `src/webview/extensions/codeBlockWithCopy.ts`, `src/webview/extensions/codeBlockCopyNodeView.ts` |
-| Highlight occurrence index  | `src/webview/highlighting/plugin.ts`                                                              |
-| Highlight worker and limits | `src/webview/highlighting/client.ts`, `src/webview/highlighting/worker.ts`, `src/webview/highlighting/types.ts` |
-| Fence info and grammars     | `src/webview/highlighting/fenceInfo.ts`, `src/webview/highlighting/languageRegistry.ts`, `src/webview/highlighting/tokenize.ts` |
-| List Markdown compatibility | `src/webview/extensions/markdownListItem.ts`, `src/webview/extensions/orderedListMarkdownFix.ts`, `src/webview/extensions/markdownTaskList.ts` |
-| Sync serialization          | `src/webview/utils/markdownSerialization.ts`                                                     |
-| Marker blocks (HTML comments, wrapper tags, link definitions) | `src/webview/extensions/htmlComment.ts`, `src/webview/utils/markedLexerNormalizer.ts` |
-| Inline HTML marks (`<kbd>`, `<sub>`, `<sup>`) | `src/webview/extensions/inlineHtmlMarks.ts`                              |
-| Link click and table right-click helpers | `src/webview/utils/linkClick.ts`, `selectTableCellAtTarget` in `src/webview/BubbleMenuView.ts` |
-| Hidden-view state           | `src/webview/utils/richViewState.ts`                                                             |
-| Copy Reference for AI       | `src/editor/aiReference.ts`, `src/webview/features/aiReferenceSelection.ts`, `src/shared/aiReferenceProtocol.ts` |
-| Feedback request contract   | `src/shared/feedbackProtocol.ts`                                                                 |
-| Snapshot protocol/service   | `src/shared/feedbackSnapshotProtocol.ts`, `src/editor/feedbackSnapshotService.ts`                |
-| Delivery protocol/transport | `src/shared/feedbackDeliveryProtocol.ts`, `src/editor/feedbackTransport.ts`                      |
-| Feedback bundle store       | `src/editor/feedbackSessionStore.ts`                                                             |
-| Feedback renderer           | `src/webview/features/feedbackReview.ts`                                                         |
-| Capture                     | `src/webview/features/feedbackCapture*.ts`, `feedbackDomCapture.ts`                              |
-| Runtime targets             | `scripts/runtime-targets.js`                                                                     |
-| Performance fixture         | `scripts/feedback-performance-fixture/`                                                          |
-| Host integration tests      | `.vscode-test.mjs`, `test/integration/`                                                          |
+| Concern                                                       | File                                                                                                                                           |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Activation and commands                                       | `src/extension.ts`                                                                                                                             |
+| VS Code adapter                                               | `src/editor/MarkdownEditorProvider.ts`                                                                                                         |
+| Ordered document work                                         | `src/editor/documentEditCoordinator.ts`                                                                                                        |
+| Large-document edit range                                     | `src/editor/minimalTextEdit.ts`                                                                                                                |
+| Sync protocol                                                 | `src/shared/documentSyncProtocol.ts`                                                                                                           |
+| Renderer sync controller                                      | `src/webview/documentSyncController.ts`                                                                                                        |
+| TipTap composition                                            | `src/webview/editor.ts`                                                                                                                        |
+| Table Enter → hardBreak                                       | `src/webview/extensions/tableCellEnterHardBreak.ts`, `src/webview/extensions/htmlPreservingTable.ts`                                           |
+| Code block node view                                          | `src/webview/extensions/codeBlockWithCopy.ts`, `src/webview/extensions/codeBlockCopyNodeView.ts`                                               |
+| Highlight occurrence index                                    | `src/webview/highlighting/plugin.ts`                                                                                                           |
+| Highlight worker and limits                                   | `src/webview/highlighting/client.ts`, `src/webview/highlighting/worker.ts`, `src/webview/highlighting/types.ts`                                |
+| Fence info and grammars                                       | `src/webview/highlighting/fenceInfo.ts`, `src/webview/highlighting/languageRegistry.ts`, `src/webview/highlighting/tokenize.ts`                |
+| List Markdown compatibility                                   | `src/webview/extensions/markdownListItem.ts`, `src/webview/extensions/orderedListMarkdownFix.ts`, `src/webview/extensions/markdownTaskList.ts` |
+| Sync serialization                                            | `src/webview/utils/markdownSerialization.ts`                                                                                                   |
+| Marker blocks (HTML comments, wrapper tags, link definitions) | `src/webview/extensions/htmlComment.ts`, `src/webview/utils/markedLexerNormalizer.ts`                                                          |
+| Inline HTML marks (`<kbd>`, `<sub>`, `<sup>`)                 | `src/webview/extensions/inlineHtmlMarks.ts`                                                                                                    |
+| Link click and table right-click helpers                      | `src/webview/utils/linkClick.ts`, `selectTableCellAtTarget` in `src/webview/BubbleMenuView.ts`                                                 |
+| Hidden-view state                                             | `src/webview/utils/richViewState.ts`                                                                                                           |
+| Copy Reference for AI                                         | `src/editor/aiReference.ts`, `src/webview/features/aiReferenceSelection.ts`, `src/shared/aiReferenceProtocol.ts`                               |
+| Add to GitHub Copilot                                         | `src/editor/copilotContext.ts`, `src/shared/copilotContextProtocol.ts`                                                                         |
+| Feedback request contract                                     | `src/shared/feedbackProtocol.ts`                                                                                                               |
+| Snapshot protocol/service                                     | `src/shared/feedbackSnapshotProtocol.ts`, `src/editor/feedbackSnapshotService.ts`                                                              |
+| Delivery protocol/transport                                   | `src/shared/feedbackDeliveryProtocol.ts`, `src/editor/feedbackTransport.ts`                                                                    |
+| Feedback bundle store                                         | `src/editor/feedbackSessionStore.ts`                                                                                                           |
+| Feedback renderer                                             | `src/webview/features/feedbackReview.ts`                                                                                                       |
+| Capture                                                       | `src/webview/features/feedbackCapture*.ts`, `feedbackDomCapture.ts`                                                                            |
+| Runtime targets                                               | `scripts/runtime-targets.js`                                                                                                                   |
+| Performance fixture                                           | `scripts/feedback-performance-fixture/`                                                                                                        |
+| Host integration tests                                        | `.vscode-test.mjs`, `test/integration/`                                                                                                        |
 
 ## Change Pattern
 

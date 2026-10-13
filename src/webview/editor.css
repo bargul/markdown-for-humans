@@ -1569,6 +1569,12 @@
   .toolbar-button > .toolbar-icon {
     pointer-events: none;
   }
+
+  /* Capability-gated buttons use the hidden attribute; the flex display above
+     must not keep them in the layout or the tab order. */
+  .toolbar-button[hidden] {
+    display: none;
+  }
   
   .toolbar-button:hover {
     background-color: var(--md-hover-bg);

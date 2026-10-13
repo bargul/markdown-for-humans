@@ -140,6 +140,20 @@ function parsePoint(value: unknown): AiReferencePoint | null {
 }
 
 /**
+ * Validate the structural selection description shared by AI-reference messages.
+ *
+ * @param value - Raw `selection` field of an untrusted message
+ * @returns The selection, or null when either end is malformed
+ */
+export function parseAiReferenceSelection(value: unknown): AiReferenceSelection | null {
+  if (!isRecord(value)) return null;
+  const start = parsePoint(value.start);
+  const end = parsePoint(value.end);
+  if (!start || !end) return null;
+  return { start, end };
+}
+
+/**
  * Validate an untrusted `copyReferenceForAi` message from the rich view.
  *
  * @param value - Raw message
@@ -150,14 +164,13 @@ export function parseAiReferenceRequest(value: unknown): AiReferenceRequest | nu
     return null;
   }
 
-  const start = parsePoint(value.selection.start);
-  const end = parsePoint(value.selection.end);
+  const selection = parseAiReferenceSelection(value.selection);
   // An empty document has no canonical blocks, which the Feedback parser rejects.
   const blocks =
     Array.isArray(value.blocks) && value.blocks.length === 0
       ? []
       : parseCanonicalFeedbackBlocks(value.blocks);
-  if (!start || !end || !blocks) return null;
+  if (!selection || !blocks) return null;
 
-  return { type: 'copyReferenceForAi', selection: { start, end }, blocks };
+  return { type: 'copyReferenceForAi', selection, blocks };
 }

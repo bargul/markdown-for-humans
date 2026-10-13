@@ -109,8 +109,24 @@ import {
   type FeedbackSnapshotIdentity,
   type FeedbackSplitSnapshotReport,
 } from './feedbackSnapshotService';
-import { aiReferencePath, formatAiReference, resolveAiReferenceLines } from './aiReference';
-import { parseAiReferenceRequest } from '../shared/aiReferenceProtocol';
+import {
+  aiReferencePath,
+  formatAiReference,
+  resolveAiReferenceLines,
+  type AiReferenceLineRange,
+} from './aiReference';
+import { parseAiReferenceRequest, type AiReferenceRequest } from '../shared/aiReferenceProtocol';
+import {
+  COPILOT_CHAT_OPEN_COMMAND,
+  copilotContextFragment,
+  isCopilotAttachableScheme,
+  isCopilotChatAvailable,
+  toCopilotChatAttachRange,
+} from './copilotContext';
+import {
+  parseCopilotContextRequest,
+  type CopilotContextRequest,
+} from '../shared/copilotContextProtocol';
 import {
   FeedbackTransport,
   type FeedbackAcknowledgementDisposition,
@@ -327,6 +343,37 @@ interface FinalizedFeedbackRendererSnapshot {
   readonly identity: FeedbackSnapshotIdentity;
   readonly blocks: readonly CanonicalFeedbackBlock[];
   readonly anchorMap: FeedbackAnchorMap;
+}
+
+/** The resolved selection reference both AI-context actions hand onward. */
+interface AiReferenceTarget {
+  /** Exact saved-file lines of the selection, or null when unmatched. */
+  readonly lines: AiReferenceLineRange | null;
+  /** The agent reference, for example `@docs/guide.md#L10-14`. */
+  readonly reference: string;
+  /** Unsaved changes had to be saved before the lines were read. */
+  readonly wasDirty: boolean;
+  /** The saved document text the lines were resolved against. */
+  readonly documentText: string;
+}
+
+/** What one AI-context action contributes to their shared driver. */
+interface AiReferenceAction {
+  /** Result message type this action answers the rich view with. */
+  readonly resultType: 'copyReferenceForAi.result' | 'addToCopilot.result';
+  /** Fail-closed parser of the untrusted request; both speak selection + blocks. */
+  readonly parse: (value: unknown) => AiReferenceRequest | CopilotContextRequest | null;
+  /** Answer when the file has changes that could not be saved first. */
+  readonly notSavedMessage: string;
+  /** Answer for a malformed request or a failed action. */
+  readonly failureMessage: string;
+  /** English label this action is logged under. */
+  readonly logLabel: string;
+  /** Feature-specific part: answers success or a fallback through `reply`. */
+  readonly run: (
+    target: AiReferenceTarget,
+    reply: (ok: boolean, message: string) => void
+  ) => Promise<void>;
 }
 
 interface ActiveFeedbackSession {
@@ -875,6 +922,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
   >();
   /** Every live rich-view webview, including duplicate split views. */
   private feedbackWebviews = new Map<string, Set<vscode.Webview>>();
+  /**
+   * Contexts handed to GitHub Copilot per document, keyed by their line
+   * fragment (`L10-14`, or empty for the whole file). Gives every context a
+   * stable number while its document is open; dropped when the last split
+   * closes.
+   */
+  private copilotContexts = new Map<string, Map<string, number>>();
   /** Last lock broadcast for each document, retained until peers are unlocked. */
   private feedbackPeerLockIds = new Map<string, string>();
   private static readonly AUTO_SAVE_DEBOUNCE_MS = 1000;
@@ -943,9 +997,15 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
         supportsMultipleEditorsPerDocument: true,
       }
     );
+    // Installing or removing GitHub Copilot changes whether the add-context
+    // action belongs in the rich views; refresh them all.
+    const extensionChangeListener = vscode.extensions.onDidChange(() => {
+      void provider.broadcastCopilotChatAvailability();
+    });
     return {
       dispose: () => {
         providerRegistration.dispose();
+        extensionChangeListener.dispose();
         provider.dispose();
       },
     };
@@ -1000,6 +1060,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     this.feedbackEntryOperations.clear();
     this.feedbackWebviews.clear();
     this.feedbackPeerLockIds.clear();
+    this.copilotContexts.clear();
     this.openPanels.clear();
   }
 
@@ -1999,6 +2060,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
           blankLineMode,
           enableMath: enableMath,
         });
+        // Whether the GitHub Copilot action belongs in this rich view.
+        void this.postCopilotChatAvailability(webview);
         break;
       }
       case 'outlineUpdated': {
@@ -2110,6 +2173,65 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
       case 'copyReferenceForAi':
         void this.handleCopyReferenceForAi(message, document, webview);
         break;
+      case 'addToCopilot':
+        void this.handleAddToCopilot(message, document, webview);
+        break;
+    }
+  }
+
+  /**
+   * Shared driver for the two AI-context actions: fail-closed request parsing,
+   * the untitled and save rules every agent reference must obey, and resolving
+   * the selection to the reference both actions hand onward. Only the
+   * feature-specific part differs, and it answers through `run`.
+   */
+  private async runAiReferenceAction(
+    message: { type: string; [key: string]: unknown },
+    document: vscode.TextDocument,
+    webview: vscode.Webview,
+    action: AiReferenceAction
+  ): Promise<void> {
+    const reply = (ok: boolean, text: string): void => {
+      void webview.postMessage({ type: action.resultType, ok, message: text });
+    };
+
+    try {
+      const request = action.parse(message);
+      if (!request) {
+        reply(false, action.failureMessage);
+        return;
+      }
+      // An untitled document has no path to reference or attach.
+      if (document.uri.scheme === 'untitled') {
+        reply(
+          false,
+          vscode.l10n.t('Save this file first. An untitled document has no path to reference.')
+        );
+        return;
+      }
+
+      const documentKey = document.uri.toString();
+      const frozen =
+        this.feedbackSessions.has(documentKey) || this.feedbackTransitions.has(documentKey);
+      const wasDirty = document.isDirty;
+      if (frozen ? wasDirty : !(await this.flushAndSaveIfDirty(document, webview))) {
+        reply(false, action.notSavedMessage);
+        return;
+      }
+
+      const documentText = document.getText();
+      const lines = resolveAiReferenceLines(documentText, request.blocks, request.selection);
+      const reference = formatAiReference(
+        aiReferencePath(
+          document.uri.fsPath,
+          vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath
+        ),
+        lines
+      );
+      await action.run({ lines, reference, wasDirty, documentText }, reply);
+    } catch (error) {
+      console.error(`[MD4H] ${action.logLabel} failed:`, error);
+      reply(false, action.failureMessage);
     }
   }
 
@@ -2126,59 +2248,150 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     document: vscode.TextDocument,
     webview: vscode.Webview
   ): Promise<void> {
-    const reply = (ok: boolean, text: string): void => {
-      void webview.postMessage({ type: 'copyReferenceForAi.result', ok, message: text });
-    };
+    await this.runAiReferenceAction(message, document, webview, {
+      resultType: 'copyReferenceForAi.result',
+      parse: parseAiReferenceRequest,
+      notSavedMessage: vscode.l10n.t('Not copied: the file has changes that could not be saved.'),
+      failureMessage: vscode.l10n.t('Could not copy a reference for AI.'),
+      logLabel: 'Copy Reference for AI',
+      run: async ({ lines, reference, wasDirty }, reply) => {
+        await vscode.env.clipboard.writeText(reference);
 
+        if (!lines) {
+          reply(
+            true,
+            vscode.l10n.t(
+              'Copied {0} without line numbers: this spot could not be matched to the saved file.',
+              reference
+            )
+          );
+        } else if (wasDirty) {
+          reply(true, vscode.l10n.t('Saved the file and copied {0}', reference));
+        } else {
+          reply(true, vscode.l10n.t('Copied {0}', reference));
+        }
+      },
+    });
+  }
+
+  /**
+   * Offer the rich view's caret or selection to GitHub Copilot as one context.
+   *
+   * Each press becomes its own chat attachment chip (file plus exact saved
+   * lines), so several contexts stay distinguishable and individually
+   * removable. When GitHub Copilot cannot take the context, its reference is
+   * copied to the clipboard instead. The result goes back to the view, which
+   * shows it as a toast.
+   */
+  private async handleAddToCopilot(
+    message: { type: string; [key: string]: unknown },
+    document: vscode.TextDocument,
+    webview: vscode.Webview
+  ): Promise<void> {
+    await this.runAiReferenceAction(message, document, webview, {
+      resultType: 'addToCopilot.result',
+      parse: parseCopilotContextRequest,
+      notSavedMessage: vscode.l10n.t('Not added: the file has changes that could not be saved.'),
+      failureMessage: vscode.l10n.t('Could not add the selection to GitHub Copilot.'),
+      logLabel: 'Add to GitHub Copilot',
+      run: async ({ lines, reference, wasDirty, documentText }, reply) => {
+        if (!(await isCopilotChatAvailable())) {
+          await vscode.env.clipboard.writeText(reference);
+          reply(
+            false,
+            vscode.l10n.t(
+              'GitHub Copilot is not available. Copied {0} to the clipboard instead.',
+              reference
+            )
+          );
+          return;
+        }
+        if (!isCopilotAttachableScheme(document.uri.scheme)) {
+          await vscode.env.clipboard.writeText(reference);
+          reply(
+            false,
+            vscode.l10n.t(
+              'This document cannot be attached to GitHub Copilot. Copied {0} to the clipboard instead.',
+              reference
+            )
+          );
+          return;
+        }
+
+        // The fragment keeps this context its own chat attachment identity;
+        // the range names the exact lines for GitHub Copilot to read.
+        const fragment = copilotContextFragment(lines);
+        const chipUri = fragment ? document.uri.with({ fragment }) : document.uri;
+        await vscode.commands.executeCommand(COPILOT_CHAT_OPEN_COMMAND, {
+          isPartialQuery: true,
+          attachFiles: [
+            lines
+              ? { uri: chipUri, range: toCopilotChatAttachRange(documentText, lines) }
+              : { uri: chipUri },
+          ],
+        });
+
+        const ordinal = this.registerCopilotContext(document.uri.toString(), fragment);
+        if (!lines) {
+          reply(
+            true,
+            vscode.l10n.t(
+              'Added {0} to GitHub Copilot without line numbers: this spot could not be matched to the saved file.',
+              reference
+            )
+          );
+        } else if (wasDirty) {
+          reply(
+            true,
+            vscode.l10n.t(
+              'Saved the file and added {0} to GitHub Copilot (context {1})',
+              reference,
+              String(ordinal)
+            )
+          );
+        } else {
+          reply(
+            true,
+            vscode.l10n.t('Added {0} to GitHub Copilot (context {1})', reference, String(ordinal))
+          );
+        }
+      },
+    });
+  }
+
+  /** Record one context of a document and return its stable 1-based number. */
+  private registerCopilotContext(documentKey: string, fragment: string): number {
+    let contexts = this.copilotContexts.get(documentKey);
+    if (!contexts) {
+      contexts = new Map();
+      this.copilotContexts.set(documentKey, contexts);
+    }
+    const existing = contexts.get(fragment);
+    if (existing !== undefined) return existing;
+    const ordinal = contexts.size + 1;
+    contexts.set(fragment, ordinal);
+    return ordinal;
+  }
+
+  /** Tell one rich view whether the GitHub Copilot action belongs in its toolbar. */
+  async postCopilotChatAvailability(webview: vscode.Webview): Promise<void> {
     try {
-      const request = parseAiReferenceRequest(message);
-      if (!request) {
-        reply(false, vscode.l10n.t('Could not copy a reference for AI.'));
-        return;
-      }
-      if (document.uri.scheme === 'untitled') {
-        reply(
-          false,
-          vscode.l10n.t('Save this file first. An untitled document has no path to reference.')
-        );
-        return;
-      }
-
-      const documentKey = document.uri.toString();
-      const frozen =
-        this.feedbackSessions.has(documentKey) || this.feedbackTransitions.has(documentKey);
-      const wasDirty = document.isDirty;
-      if (frozen ? wasDirty : !(await this.flushAndSaveIfDirty(document, webview))) {
-        reply(false, vscode.l10n.t('Not copied: the file has changes that could not be saved.'));
-        return;
-      }
-
-      const lines = resolveAiReferenceLines(document.getText(), request.blocks, request.selection);
-      const reference = formatAiReference(
-        aiReferencePath(
-          document.uri.fsPath,
-          vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath
-        ),
-        lines
-      );
-      await vscode.env.clipboard.writeText(reference);
-
-      if (!lines) {
-        reply(
-          true,
-          vscode.l10n.t(
-            'Copied {0} without line numbers: this spot could not be matched to the saved file.',
-            reference
-          )
-        );
-      } else if (wasDirty) {
-        reply(true, vscode.l10n.t('Saved the file and copied {0}', reference));
-      } else {
-        reply(true, vscode.l10n.t('Copied {0}', reference));
-      }
+      await webview.postMessage({
+        type: 'copilotChatAvailability',
+        available: await isCopilotChatAvailable(),
+      });
     } catch (error) {
-      console.error('[MD4H] Copy Reference for AI failed:', error);
-      reply(false, vscode.l10n.t('Could not copy a reference for AI.'));
+      console.warn('[MD4H] Could not report GitHub Copilot availability:', error);
+    }
+  }
+
+  /** Refresh the availability flag in every live rich view (extensions change). */
+  async broadcastCopilotChatAvailability(): Promise<void> {
+    const available = await isCopilotChatAvailable();
+    for (const webviews of this.feedbackWebviews.values()) {
+      for (const webview of webviews) {
+        void webview.postMessage({ type: 'copilotChatAvailability', available });
+      }
     }
   }
 
@@ -6805,7 +7018,11 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider, 
     const webviews = this.feedbackWebviews.get(documentKey);
     if (!webviews) return;
     webviews.delete(webview);
-    if (webviews.size === 0) this.feedbackWebviews.delete(documentKey);
+    if (webviews.size === 0) {
+      this.feedbackWebviews.delete(documentKey);
+      // GitHub Copilot context numbering belongs to one open document.
+      this.copilotContexts.delete(documentKey);
+    }
     const pendingRelease = this.pendingFeedbackPeerReleases.get(documentKey);
     const releaseTarget = pendingRelease?.targets.get(webview);
     releaseTarget?.deliveryAbortController?.abort();

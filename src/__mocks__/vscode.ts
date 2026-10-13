@@ -94,6 +94,14 @@ export const workspace = {
 export const commands = {
   registerCommand: jest.fn(() => ({ dispose: jest.fn() })),
   executeCommand: jest.fn(),
+  getCommands: jest.fn(async () => [] as string[]),
+};
+
+// Mock extensions API
+export const extensions = {
+  getExtension: jest.fn(),
+  onDidChange: jest.fn(() => ({ dispose: jest.fn() })),
+  all: [] as unknown[],
 };
 
 // Mock Uri
@@ -112,6 +120,10 @@ export const Uri = {
 export const env = {
   openExternal: jest.fn(),
   language: 'en',
+  clipboard: {
+    writeText: jest.fn(async () => undefined),
+    readText: jest.fn(async () => ''),
+  },
 };
 
 // Mock l10n API: English, as when VS Code has loaded no bundle
@@ -240,6 +252,7 @@ export default {
   window,
   workspace,
   commands,
+  extensions,
   l10n,
   Uri,
   StatusBarAlignment,
