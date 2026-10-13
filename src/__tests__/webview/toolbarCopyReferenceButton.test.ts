@@ -19,8 +19,11 @@ describe('toolbar Copy Reference for AI button', () => {
     expect(button).toBeTruthy();
     expect(toolbar.firstElementChild?.hasAttribute('data-feedback-start')).toBe(true);
     expect(button.previousElementSibling).toBe(toolbar.firstElementChild);
-    // The two AI actions form one group: the separator comes after them.
-    expect(button.nextElementSibling?.classList.contains('toolbar-separator')).toBe(true);
+    // The two AI actions form one group: Add to GitHub Copilot follows, then the separator.
+    expect(button.nextElementSibling?.classList.contains('copilot-add-button')).toBe(true);
+    expect(
+      button.nextElementSibling?.nextElementSibling?.classList.contains('toolbar-separator')
+    ).toBe(true);
   });
 
   it('says what it copies and shows the @ icon', () => {

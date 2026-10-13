@@ -94,6 +94,14 @@ export const workspace = {
 export const commands = {
   registerCommand: jest.fn(() => ({ dispose: jest.fn() })),
   executeCommand: jest.fn(),
+  getCommands: jest.fn(async () => [] as string[]),
+};
+
+// Mock extensions API
+export const extensions = {
+  getExtension: jest.fn(),
+  onDidChange: jest.fn(() => ({ dispose: jest.fn() })),
+  all: [] as unknown[],
 };
 
 // Mock Uri
@@ -112,6 +120,10 @@ export const Uri = {
 export const env = {
   openExternal: jest.fn(),
   language: 'en',
+  clipboard: {
+    writeText: jest.fn(async () => undefined),
+    readText: jest.fn(async () => ''),
+  },
 };
 
 // Mock l10n API: English, as when VS Code has loaded no bundle
@@ -166,7 +178,7 @@ export class Selection {
   constructor(
     public anchor: { line: number; character: number },
     public active: { line: number; character: number }
-  ) {}
+  ) { }
 
   get isEmpty(): boolean {
     return this.anchor.line === this.active.line && this.anchor.character === this.active.character;
@@ -198,7 +210,7 @@ export class Position {
   constructor(
     public line: number,
     public character: number
-  ) {}
+  ) { }
 }
 
 // Tree item + visuals
@@ -210,12 +222,12 @@ export class TreeItem {
   constructor(
     public label: string,
     public collapsibleState?: number
-  ) {}
+  ) { }
 }
 
 export class EventEmitter<T> {
   public event = jest.fn(() => ({ dispose: jest.fn() }));
-  fire = jest.fn((_data?: T) => {});
+  fire = jest.fn((_data?: T) => { });
   dispose = jest.fn();
 }
 
@@ -229,17 +241,18 @@ export class ThemeIcon {
   constructor(
     public id: string,
     public color?: ThemeColor
-  ) {}
+  ) { }
 }
 
 export class ThemeColor {
-  constructor(public id: string) {}
+  constructor(public id: string) { }
 }
 
 export default {
   window,
   workspace,
   commands,
+  extensions,
   l10n,
   Uri,
   StatusBarAlignment,
@@ -257,7 +270,7 @@ export class Range {
   constructor(
     public start: Position,
     public end: Position
-  ) {}
+  ) { }
 }
 
 // Minimal WorkspaceEdit mock

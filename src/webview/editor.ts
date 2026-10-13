@@ -43,6 +43,7 @@ import {
   createTableMenu,
   selectTableCellAtTarget,
   getFeedbackToolbarMenuHost,
+  setToolbarCopilotVisible,
   updateToolbarStates,
 } from './BubbleMenuView';
 import {
@@ -1927,8 +1928,8 @@ window.addEventListener('message', async (event: MessageEvent) => {
           const cachedMetadata = imagePath ? getCachedImageMetadata(imagePath) : null;
           const preservedDimensions =
             cachedMetadata &&
-            cachedMetadata.dimensions.width > 0 &&
-            cachedMetadata.dimensions.height > 0
+              cachedMetadata.dimensions.width > 0 &&
+              cachedMetadata.dimensions.height > 0
               ? cachedMetadata.dimensions
               : null;
 
@@ -2250,6 +2251,20 @@ window.addEventListener('message', async (event: MessageEvent) => {
         });
         break;
       }
+      case 'addToCopilot.result': {
+        const text = typeof message.message === 'string' ? message.message : '';
+        void import('./features/auditOverlay').then(({ showToast }) => {
+          showToast(text, message.ok === true ? 'success' : 'info', {
+            dedupeKey: 'add-to-copilot',
+          });
+        });
+        break;
+      }
+      case 'copilotChatAvailability':
+        // The host knows whether GitHub Copilot can take document context.
+        // Until it can, the toolbar action stays out of sight.
+        setToolbarCopilotVisible(message.available === true);
+        break;
       case 'pastePlainText': {
         // Sent by the pastePlainText command (Ctrl/Cmd+Shift+V) with the
         // clipboard's text; VS Code keeps that chord from firing a paste event.
@@ -2857,6 +2872,25 @@ window.addEventListener('copyReferenceForAi', () => {
     console.error('[MD4H] Copy Reference for AI failed:', error);
     void import('./features/auditOverlay').then(({ showToast }) => {
       showToast(l10n.t('Could not copy a reference for AI.'), 'info');
+    });
+  }
+});
+
+// Add the selected lines to GitHub Copilot, from the toolbar button. The view
+// says where the selection is exactly as for the AI reference; the host saves,
+// resolves the lines and hands each press its own context to the chat.
+window.addEventListener('addToCopilot', () => {
+  if (!editor) return;
+  try {
+    vscode.postMessage({
+      type: 'addToCopilot',
+      selection: describeAiReferenceSelection(editor.state),
+      blocks: enumerateCanonicalFeedbackBlocks(editor),
+    });
+  } catch (error) {
+    console.error('[MD4H] Add to GitHub Copilot failed:', error);
+    void import('./features/auditOverlay').then(({ showToast }) => {
+      showToast(l10n.t('Could not add the selection to GitHub Copilot.'), 'info');
     });
   }
 });

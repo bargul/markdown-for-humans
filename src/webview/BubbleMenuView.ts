@@ -130,11 +130,11 @@ function setCodeBlockNormalized(editor: Editor, language: string): void {
       attrs: { language },
       content: plainText
         ? [
-            {
-              type: 'text',
-              text: plainText,
-            },
-          ]
+          {
+            type: 'text',
+            text: plainText,
+          },
+        ]
         : undefined,
     })
     .run();
@@ -143,6 +143,16 @@ function setCodeBlockNormalized(editor: Editor, language: string): void {
 // Track editor focus state
 let isEditorFocused = false;
 let focusChangeListener: ((e: Event) => void) | null = null;
+
+// Whether GitHub Copilot can take document context. The host reports it; the
+// Add to GitHub Copilot button is shown only while it is true.
+let copilotChatAvailable = false;
+
+/** Show or hide the GitHub Copilot actions, per the host's availability report. */
+export function setToolbarCopilotVisible(visible: boolean): void {
+  copilotChatAvailable = visible;
+  updateToolbarStates();
+}
 
 type ToolbarIcon = {
   name?: string;
@@ -185,6 +195,9 @@ type ToolbarActionButton = {
   // runs against an unfocused editor. Buttons that read live editor state
   // (selection, focus) at click time should set this to true.
   preserveEditorFocus?: boolean;
+  // Whether the button is shown at all, e.g. because its feature needs another
+  // extension. Hidden buttons are removed from the layout and the tab order.
+  isVisible?: () => boolean;
   visibleText?: string;
   feedbackData?: 'start';
 };
@@ -375,6 +388,20 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       },
       isActive: () => false,
       className: 'copy-reference-button',
+    },
+    {
+      type: 'button',
+      label: l10n.t('Add to GitHub Copilot'),
+      title: l10n.t('Add to GitHub Copilot'),
+      icon: { name: 'copilot', fallback: 'GH' },
+      action: () => {
+        window.dispatchEvent(new CustomEvent('addToCopilot'));
+      },
+      isActive: () => false,
+      className: 'copilot-add-button',
+      // GitHub Copilot takes the context only when it is installed and its
+      // chat is there, so the button appears only then.
+      isVisible: () => copilotChatAvailable,
     },
     { type: 'separator' },
     {
@@ -655,7 +682,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         isActive: () =>
           editor.isActive('codeBlock') &&
           resolveGrammar(parseFenceInfo(editor.getAttributes('codeBlock').language).language) ===
-            resolveGrammar(language),
+          resolveGrammar(language),
       })),
     },
     {
@@ -825,6 +852,9 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
       const active = config.isActive ? config.isActive() : false;
       element.classList.toggle('active', Boolean(active));
       element.setAttribute('aria-pressed', String(Boolean(active)));
+
+      // Capability-gated buttons are absent until their feature is available.
+      element.hidden = config.isVisible ? !config.isVisible() : false;
 
       // Check if button requires focus
       const enabled = !feedbackTransitionLocked && (config.requiresFocus ? isEditorFocused : true);
@@ -1122,7 +1152,7 @@ export function createFormattingToolbar(editor: Editor): HTMLElement {
         : { name: 'comment-discussion-sparkle', fallback: commentsExpanded ? '●' : '○' };
     const focusedControl =
       document.activeElement instanceof HTMLButtonElement &&
-      toolbar.contains(document.activeElement)
+        toolbar.contains(document.activeElement)
         ? document.activeElement.getAttribute('data-feedback-control')
         : null;
     const startHadFocus =
@@ -1369,41 +1399,41 @@ export function createTableMenu(editor: Editor): HTMLElement {
   const items: Array<
     | { separator: true }
     | {
-        label: string;
-        action: () => void;
-      }
+      label: string;
+      action: () => void;
+    }
   > = [
-    {
-      label: l10n.t('Add Row Before'),
-      action: () => editor.chain().focus().addRowBefore().run(),
-    },
-    {
-      label: l10n.t('Add Row After'),
-      action: () => editor.chain().focus().addRowAfter().run(),
-    },
-    {
-      label: l10n.t('Delete Row'),
-      action: () => editor.chain().focus().deleteRow().run(),
-    },
-    { separator: true },
-    {
-      label: l10n.t('Add Column Before'),
-      action: () => editor.chain().focus().addColumnBefore().run(),
-    },
-    {
-      label: l10n.t('Add Column After'),
-      action: () => editor.chain().focus().addColumnAfter().run(),
-    },
-    {
-      label: l10n.t('Delete Column'),
-      action: () => editor.chain().focus().deleteColumn().run(),
-    },
-    { separator: true },
-    {
-      label: l10n.t('Delete Table'),
-      action: () => editor.chain().focus().deleteTable().run(),
-    },
-  ];
+      {
+        label: l10n.t('Add Row Before'),
+        action: () => editor.chain().focus().addRowBefore().run(),
+      },
+      {
+        label: l10n.t('Add Row After'),
+        action: () => editor.chain().focus().addRowAfter().run(),
+      },
+      {
+        label: l10n.t('Delete Row'),
+        action: () => editor.chain().focus().deleteRow().run(),
+      },
+      { separator: true },
+      {
+        label: l10n.t('Add Column Before'),
+        action: () => editor.chain().focus().addColumnBefore().run(),
+      },
+      {
+        label: l10n.t('Add Column After'),
+        action: () => editor.chain().focus().addColumnAfter().run(),
+      },
+      {
+        label: l10n.t('Delete Column'),
+        action: () => editor.chain().focus().deleteColumn().run(),
+      },
+      { separator: true },
+      {
+        label: l10n.t('Delete Table'),
+        action: () => editor.chain().focus().deleteTable().run(),
+      },
+    ];
 
   items.forEach(item => {
     if ('separator' in item) {
