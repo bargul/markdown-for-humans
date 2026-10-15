@@ -1,0 +1,2 @@
+/* local patch: restore editor focus after the window regains focus */
+;(()=>{let w=!1;const pm=t=>!!(t&&t.closest&&t.closest(".ProseMirror"));document.addEventListener("focusin",e=>{w=pm(e.target)},!0);document.addEventListener("focusout",e=>{e.relatedTarget&&(w=pm(e.relatedTarget))},!0);window.addEventListener("focus",()=>{w&&setTimeout(()=>{if(pm(document.activeElement))return;const p=document.querySelector(".ProseMirror[contenteditable=true]");p&&p.focus()},30)})})();

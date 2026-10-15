@@ -1,0 +1,13 @@
+/* local patch: normal bullets nested under todos display as normal bullets; todos nested under plain bullets are indented */
+.markdown-editor li:not([data-checked])>ul[data-type=taskList]{padding-left:30px}
+.markdown-editor li ul[data-type=taskList]>li[data-checked]{position:relative}
+.markdown-editor li ul[data-type=taskList]>li[data-checked]>label{position:absolute;right:100%;top:.3em;margin-right:.35em}
+.markdown-editor ul[data-type=taskList] li:not([data-checked]){display:list-item}
+.markdown-editor ul[data-type=taskList] ul:not([data-type=taskList]){list-style:disc}
+.markdown-editor ul[data-type=taskList] ul:not([data-type=taskList]) ul:not([data-type=taskList]){list-style:circle}
+.markdown-editor ul[data-type=taskList] ul:not([data-type=taskList]) ul:not([data-type=taskList]) ul:not([data-type=taskList]){list-style:square}
+.markdown-editor ul[data-type=taskList] ol{list-style:decimal}
+/* top-level bullets: text starts where todo text starts (4px margin + 13px box + 3px margin = 20px); dot centered on the checkbox (10.5px) */
+.markdown-editor>ul:not([data-type=taskList]),.markdown-editor>ol{padding-left:20px}
+.markdown-editor>ul:not([data-type=taskList])>li{list-style:none;position:relative}
+.markdown-editor>ul:not([data-type=taskList])>li::before{content:"\2022";position:absolute;left:-20px;width:21px;text-align:center}
